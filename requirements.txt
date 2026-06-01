@@ -1,3 +1,9 @@
 fastapi>=0.100.0
 uvicorn[standard]>=0.22.0
 pyyaml>=6.0
+
+python-docx>=0.8.11
+openpyxl>=3.1.0
+python-pptx>=0.6.21
+pdfplumber>=0.9.0
+chardet>=5.0
