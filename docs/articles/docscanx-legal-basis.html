@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocScanX 的法律基石：从"字段统计"到"人头统计"</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.9;
+            color: #333;
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            color: white;
+            padding: 70px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 50px 45px;
+        }
+
+        h2 {
+            color: #1a2a6c;
+            font-size: 1.7em;
+            margin: 45px 0 20px 0;
+            padding-bottom: 12px;
+            border-bottom: 4px solid #1a2a6c;
+        }
+
+        h3 {
+            color: #b21f1f;
+            font-size: 1.3em;
+            margin: 30px 0 15px 0;
+        }
+
+        p {
+            margin-bottom: 20px;
+            text-align: justify;
+            font-size: 1.05em;
+        }
+
+        .law-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-left: 5px solid #1a2a6c;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .law-card h4 {
+            color: #1a2a6c;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .law-card h4::before {
+            content: "⚖️";
+        }
+
+        .law-card .article {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #b21f1f;
+            font-style: italic;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-left: 5px solid #b21f1f;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .highlight-box p {
+            margin: 0;
+            font-size: 1.1em;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%);
+            color: white;
+            padding: 18px 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .emphasis {
+            color: #b21f1f;
+            font-weight: 700;
+        }
+
+        .gdpr-box {
+            background: linear-gradient(135deg, #e8f4f8 0%, #d4e6ed 100%);
+            border: 2px solid #1a2a6c;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 12px;
+        }
+
+        .gdpr-box h4 {
+            color: #1a2a6c;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 20px 10px;
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%);
+            border-radius: 12px;
+            color: white;
+        }
+
+        .metric .number {
+            font-size: 2em;
+            font-weight: 700;
+            display: block;
+        }
+
+        .metric .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .conclusion-box {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%);
+            color: white;
+            padding: 35px;
+            border-radius: 15px;
+            margin: 35px 0;
+            text-align: center;
+        }
+
+        .conclusion-box .big-quote {
+            font-size: 1.6em;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .conclusion-box p {
+            text-align: center;
+            margin: 0;
+            opacity: 0.95;
+            color: white;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer p {
+            color: #6c757d;
+            margin: 5px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header h1 {
+                font-size: 1.6em;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>法律视角：以"人"为统计单位的正当性</h1>
+            <p class="subtitle">为什么 DocScanX 的设计理念符合法律规定</p>
+        </header>
+
+        <article class="content">
+            <h2>一、一个关键问题</h2>
+
+            <p>当监管机构要求您报告数据泄露事件时，他们会问什么？</p>
+
+            <div class="highlight-box">
+                <p>"泄露了多少<span class="emphasis">人</span>的信息？"</p>
+            </div>
+
+            <p>而不是："泄露了多少个身份证号？"</p>
+
+            <p>这个看似简单的提问差异，揭示了数据保护法律的<span class="emphasis">核心逻辑</span>：法律保护的对象不是"数据字段"，而是<span class="emphasis">自然人的权益</span>。</p>
+
+            <h2>二、法律明确以"人"为保护单位</h2>
+
+            <div class="law-card">
+                <h4>《中华人民共和国个人信息保护法》</h4>
+                
+                <div class="article">
+                    <strong>第二条：</strong>自然人的个人信息受法律保护，任何组织、个人不得侵害自然人的个人信息权益。
+                </div>
+                
+                <div class="article">
+                    <strong>第四条：</strong>个人信息是以电子或者其他方式记录的与已识别或者<span class="emphasis">可识别的自然人</span>有关的各种信息。
+                </div>
+                
+                <p style="margin-top: 15px;">
+                    <strong>核心要点：</strong>法律保护的落脚点是"自然人"，而不是孤立的"信息字段"。一个完整的自然人画像，比一堆分散的字段更有法律意义。
+                </p>
+            </div>
+
+            <div class="law-card">
+                <h4>《国家网络安全事件报告管理办法》（2025年）</h4>
+                
+                <p>数据泄露事件分级标准直接以"人数"为统计单位：</p>
+                
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="number">1000万+</span>
+                        <span class="label">特别重大<br>特别重大</span>
+                    </div>
+                    <div class="metric">
+                        <span class="number">100万+</span>
+                        <span class="label">重大</span>
+                    </div>
+                    <div class="metric">
+                        <span class="number">10万+</span>
+                        <span class="label">较大</span>
+                    </div>
+                    <div class="metric">
+                        <span class="number">10万以下</span>
+                        <span class="label">一般</span>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 15px;">
+                    <strong>核心要点：</strong>监管部门评估泄露事件严重程度的标准是"<span class="emphasis">受影响的自然人数量</span>"，而非"泄露的字段数量"。
+                </p>
+            </div>
+
+            <h2>三、字段统计 vs 人员统计：合规差距</h2>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>对比维度</th>
+                        <th>传统字段统计</th>
+                        <th>DocScanX 人员统计</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>报告用语</td>
+                        <td>"泄露 10,000 个身份证号"</td>
+                        <td>"影响 3,000 名自然人"</td>
+                    </tr>
+                    <tr>
+                        <td>监管要求</td>
+                        <td>⚠️ 不符合分级标准</td>
+                        <td>✅ 直接对应法律用语</td>
+                    </tr>
+                    <tr>
+                        <td>合规评估</td>
+                        <td>需要二次换算</td>
+                        <td>直接可用</td>
+                    </tr>
+                    <tr>
+                        <td>通知对象</td>
+                        <td>无法直接通知</td>
+                        <td>可定位到具体个人</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>四、国际法规的启示</h2>
+
+            <div class="gdpr-box">
+                <h4>🇪🇺 GDPR（欧盟通用数据保护条例）</h4>
+                
+                <p>GDPR 是全球最严格的数据保护法规之一，其核心概念包括：</p>
+                
+                <ul>
+                    <li><strong>数据主体（Data Subject）：</strong>被个人数据指向的<span class="emphasis">自然人</span></li>
+                    <li><strong>个人数据（Personal Data）：</strong>与已识别或<span class="emphasis">可识别的自然人</span>相关的任何信息</li>
+                    <li><strong>数据保护影响评估（DPIA）：</strong>评估数据处理对<span class="emphasis">自然人的权利和自由</span>可能造成的高风险</li>
+                </ul>
+                
+                <p style="margin-top: 15px;">
+                    <strong>核心启示：</strong>GDPR 从设计之初就将"自然人"作为数据保护的出发点和落脚点，所有合规措施都围绕"人"而非"字段"展开。
+                </p>
+            </div>
+
+            <h2>五、行业法规的明确要求</h2>
+
+            <div class="law-card">
+                <h4>《银行保险机构数据安全管理办法》（2024）</h4>
+                
+                <div class="article">
+                    <strong>目的：</strong>保护个人、组织的合法权益，维护国家安全和社会公共利益。
+                </div>
+                
+                <p style="margin-top: 15px;">
+                    金融行业对个人信息保护的要求更为严格，明确将"个人"作为保护对象，而非抽象的"数据字段"。
+                </p>
+            </div>
+
+            <div class="law-card">
+                <h4>《网络数据安全管理条例》（2025）</h4>
+                
+                <p>第十一条要求：发生网络数据安全事件时，应当立即采取补救措施。</p>
+                
+                <p>监管关注的核心问题是：<span class="emphasis">"哪些自然人的权益受到了影响？"</span></p>
+            </div>
+
+            <h2>六、DocScanX 的合规优势</h2>
+
+            <h3>1. 直接满足监管报告要求</h3>
+            
+            <p>当您使用 DocScanX 生成报告时，可以直接告诉监管部门："我们发现并保护了 <span class="emphasis">X 名自然人</span>的敏感信息"，这与法律用语完全一致。</p>
+
+            <h3>2. 支持个人权利响应</h3>
+            
+            <p>《个人信息保护法》第四十四至四十五条规定，个人有权查阅、复制其个人信息。DocScanX 可以快速定位特定自然人的所有敏感信息记录，满足响应个人权利请求的要求。</p>
+
+            <h3>3. 符合数据保护影响评估（DPIA）要求</h3>
+            
+            <p>无论是 GDPR 还是国内法规，都要求评估数据处理对自然人权益的影响。DocScanX 的人员级统计，直接服务于这一评估需求。</p>
+
+            <h2>七、总结</h2>
+
+            <div class="conclusion-box">
+                <div class="big-quote">法律保护的是"人"，不是"字段"</div>
+                <p>从《个人信息保护法》到《数据安全法》，从 GDPR 到行业监管规定，所有法律文本都明确以"自然人"作为数据保护的核心对象。</p>
+                <p style="margin-top: 15px;">DocScanX 坚持"以人为个体"的统计理念，不仅是技术设计的创新，更是对法律精神的准确理解和遵循。</p>
+            </div>
+
+            <p>选择 DocScanX，意味着您的数据安全措施从一开始就站在了合规的正确方向上。</p>
+        </article>
+
+        <footer class="footer">
+            <p>DocScanX 团队</p>
+            <p>依法保护，精准合规</p>
+        </footer>
+    </div>
+</body>
+</html>

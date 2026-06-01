@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocScanX：为数据安全而生的离线文档敏感信息扫描系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .content {
+            padding: 50px 40px;
+        }
+        
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin: 30px 0 15px 0;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            text-align: justify;
+            font-size: 1.05em;
+        }
+        
+        ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin-bottom: 12px;
+            position: relative;
+        }
+        
+        li::marker {
+            color: #667eea;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .highlight-box p {
+            margin: 0;
+            font-style: italic;
+            font-size: 1.1em;
+            color: #555;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .footer p {
+            color: #6c757d;
+            margin: 5px 0;
+            text-align: center;
+        }
+        
+        .footer .team {
+            font-weight: 600;
+            color: #667eea;
+            margin-top: 15px;
+        }
+        
+        .icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            h2 {
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>DocScanX</h1>
+            <p class="subtitle">为数据安全而生的离线文档敏感信息扫描系统</p>
+        </header>
+        
+        <article class="content">
+            <h2>一、项目背景：数据泄露的隐形危机</h2>
+            
+            <p>在数字化时代，文档已成为企业最核心的信息载体。从合同协议到财务报表，从客户资料到技术文档，每一份文件都可能承载着企业的商业机密和敏感数据。</p>
+            
+            <p>然而，数据泄露事件却层出不穷：</p>
+            
+            <ul>
+                <li><strong>内部泄露</strong>：员工无意中将包含敏感信息的文档外发</li>
+                <li><strong>第三方风险</strong>：外包团队、合作伙伴接触敏感资料后管理不善</li>
+                <li><strong>历史遗留</strong>：旧系统中大量未清理的敏感文档成为隐患</li>
+                <li><strong>合规压力</strong>：GDPR、等保2.0等法规对数据保护提出严格要求</li>
+            </ul>
+            
+            <p>更令人担忧的是，许多企业在进行敏感信息扫描时，不得不将文档上传到云端第三方服务。这意味着：</p>
+            
+            <ul>
+                <li>商业机密可能被第三方获取</li>
+                <li>涉及个人隐私的数据面临泄露风险</li>
+                <li>离线环境无法使用在线服务</li>
+            </ul>
+            
+            <div class="highlight-box">
+                <p>有没有一种方案，既能高效识别敏感信息，又能保证数据绝对安全？</p>
+            </div>
+            
+            <h2>二、项目初衷：打造真正的"离线守护者"</h2>
+            
+            <p>DocScanX 的诞生，源于一个简单而坚定的信念：<strong>敏感信息的扫描和检测，不应该以牺牲数据安全为代价。</strong></p>
+            
+            <p>我们的初衷可以概括为三个核心诉求：</p>
+            
+            <h3>1. 绝对离线，零数据外传</h3>
+            
+            <p>DocScanX 采用 100% 纯离线架构：</p>
+            
+            <ul>
+                <li>所有 AI 模型（OCR、NLP）都部署在本地</li>
+                <li>文档处理全程不连接任何外部服务器</li>
+                <li>无需注册账号，无需 API Key</li>
+                <li>即使在完全隔离的内网环境也能正常运行</li>
+            </ul>
+            
+            <p>这意味着，您的文档从进入系统到生成报告，整个过程都在您的掌控之中。</p>
+            
+            <h3>2. 开箱即用，降低使用门槛</h3>
+            
+            <p>我们深知，安全工具如果难以使用，最终只会被束之高阁。因此 DocScanX 致力于：</p>
+            
+            <ul>
+                <li>支持 30+ 种文档格式，无需手动转换</li>
+                <li>提供 Web 管理界面，非技术人员也能轻松操作</li>
+                <li>自动识别敏感信息类型，无需复杂配置</li>
+                <li>生成直观的检测报告，快速定位风险点</li>
+            </ul>
+            
+            <h3>3. 企业级可靠，应对真实场景</h3>
+            
+            <p>DocScanX 从设计之初就考虑了企业级需求：</p>
+            
+            <ul>
+                <li>支持大规模文档批量扫描</li>
+                <li>断点续传，避免重复劳动</li>
+                <li>内存保护机制，防止大文件导致系统崩溃</li>
+                <li>多种导出格式（Excel、HTML、JSON），便于后续处理</li>
+            </ul>
+            
+            <h2>三、技术选型背后的考量</h2>
+            
+            <p>选择 PaddleOCR 和 PaddleNLP 作为核心技术，并非偶然：</p>
+            
+            <p><strong>PaddleOCR</strong> 是业界领先的 OCR 引擎，在中文识别准确率上表现卓越，且完全开源可离线部署。</p>
+            
+            <p><strong>PaddleNLP 的 UIE 模型</strong> 则是信息抽取领域的创新之作，它实现了"零样本学习"——无需针对特定场景训练，就能识别各类敏感信息。</p>
+            
+            <p>更重要的是，这两款工具都来自百度的飞桨生态，技术成熟、社区活跃、文档完善，为项目的长期维护提供了坚实保障。</p>
+            
+            <h2>四、我们的愿景</h2>
+            
+            <p>DocScanX 不仅是一个工具，更是我们对数据安全的一种态度：</p>
+            
+            <div class="highlight-box">
+                <p>让敏感信息扫描变得简单、安全、可靠。</p>
+            </div>
+            
+            <p>我们希望：</p>
+            
+            <ul>
+                <li>中小企业无需投入大量资金，就能拥有企业级的数据安全检测能力</li>
+                <li>大型企业能在离线环境建立完整的安全审查流程</li>
+                <li>个人用户能轻松检查自己的文档是否存在隐私泄露风险</li>
+                <li>所有用户都能确信：自己的数据，永远只属于自己</li>
+            </ul>
+            
+            <h2>五、写在最后</h2>
+            
+            <p>数据安全没有终点，只有持续的守护。</p>
+            
+            <p>DocScanX 愿意成为您数据安全防线上的忠诚卫士，在离线环境中默默守护每一份文档的安全。</p>
+            
+            <div class="highlight-box">
+                <p>因为您的数据，值得被认真对待。</p>
+            </div>
+        </article>
+        
+        <footer class="footer">
+            <p>DocScanX 团队</p>
+            <p class="team">2024年</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+output/*
+!output/.gitkeep
+logs/*
+!logs/.gitkeep
+temp/*
+!temp/.gitkeep
+models/*
+!models/.gitkeep
+*.egg-info/
+dist/
+build/
+.vscode/
+.idea/

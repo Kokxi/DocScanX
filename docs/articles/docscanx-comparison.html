@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocScanX vs 其他扫描工具：为什么选择离线方案</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .content {
+            padding: 50px 40px;
+        }
+        
+        h2 {
+            color: #11998e;
+            font-size: 1.7em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #11998e;
+        }
+        
+        h3 {
+            color: #38ef7d;
+            font-size: 1.3em;
+            margin: 30px 0 15px 0;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            text-align: justify;
+            font-size: 1.05em;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .comparison-table tr:hover {
+            background: #e9ecef;
+        }
+        
+        .feature-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-left: 5px solid #11998e;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .feature-box h4 {
+            color: #11998e;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .feature-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .feature-box li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-left: 5px solid #ff6b6b;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .highlight-box p {
+            margin: 0;
+            font-style: italic;
+            font-size: 1.1em;
+            color: #555;
+        }
+        
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .pros, .cons {
+            padding: 25px;
+            border-radius: 10px;
+        }
+        
+        .pros {
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+        }
+        
+        .cons {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+        
+        .pros h4, .cons h4 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .pros h4 {
+            color: #27ae60;
+        }
+        
+        .cons h4 {
+            color: #e74c3c;
+        }
+        
+        .pros ul, .cons ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .pros li, .cons li {
+            margin-bottom: 8px;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .footer p {
+            color: #6c757d;
+            margin: 5px 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.6em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .comparison-table {
+                font-size: 0.9em;
+            }
+            
+            .comparison-table th,
+            .comparison-table td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>DocScanX vs 其他扫描工具</h1>
+            <p class="subtitle">为什么选择离线方案</p>
+        </header>
+        
+        <article class="content">
+            <h2>一、市场现状：扫描工具的两大阵营</h2>
+            
+            <p>当前市场上的文档敏感信息扫描工具主要分为两大类：</p>
+            
+            <div class="feature-box">
+                <h4>云端在线服务</h4>
+                <ul>
+                    <li>代表产品：各类云安全厂商的 SaaS 服务</li>
+                    <li>特点：无需本地部署，按量付费</li>
+                    <li>优势：开箱即用，持续更新</li>
+                </ul>
+            </div>
+            
+            <div class="feature-box">
+                <h4>本地部署软件</h4>
+                <ul>
+                    <li>代表产品：传统 DLP（数据防泄漏）系统</li>
+                    <li>特点：安装在企业内网，数据不出境</li>
+                    <li>优势：安全性高，可控性强</li>
+                </ul>
+            </div>
+            
+            <p>然而，这两类方案都存在明显的局限性。DocScanX 的出现，正是为了填补市场空白，提供一个既安全又易用的第三种选择。</p>
+            
+            <h2>二、核心差异对比</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>对比维度</th>
+                        <th>云端在线服务</th>
+                        <th>传统本地 DLP</th>
+                        <th>DocScanX</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>数据隐私</strong></td>
+                        <td>需上传云端，存在泄露风险</td>
+                        <td>数据本地处理，安全可靠</td>
+                        <td>100% 离线，零数据外传</td>
+                    </tr>
+                    <tr>
+                        <td><strong>部署成本</strong></td>
+                        <td>按量付费，长期使用成本高</td>
+                        <td>License 费用昂贵，需专业团队</td>
+                        <td>开源免费，一键部署</td>
+                    </tr>
+                    <tr>
+                        <td><strong>使用门槛</strong></td>
+                        <td>注册账号，配置 API</td>
+                        <td>复杂配置，需培训</td>
+                        <td>开箱即用，Web 界面</td>
+                    </tr>
+                    <tr>
+                        <td><strong>离线环境</strong></td>
+                        <td>无法使用</td>
+                        <td>可以部署</td>
+                        <td>专为离线设计</td>
+                    </tr>
+                    <tr>
+                        <td><strong>模型更新</strong></td>
+                        <td>自动更新</td>
+                        <td>需手动更新</td>
+                        <td>支持手动更新模型</td>
+                    </tr>
+                    <tr>
+                        <td><strong>定制化</strong></td>
+                        <td>受限</td>
+                        <td>部分支持</td>
+                        <td>开源可定制</td>
+                    </tr>
+                    <tr>
+                        <td><strong>文档格式支持</strong></td>
+                        <td>常见格式</td>
+                        <td>常见格式</td>
+                        <td>30+ 种格式</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h2>三、DocScanX 的独特优势</h2>
+            
+            <h3>1. 极致的隐私保护</h3>
+            
+            <p>与传统本地 DLP 不同，DocScanX 不仅数据本地处理，更做到了<strong>完全离线</strong>：</p>
+            
+            <ul>
+                <li>无需注册账号，不存在账号信息泄露</li>
+                <li>无需联网验证，不发送任何遥测数据</li>
+                <li>所有 AI 模型本地部署，不调用云端 API</li>
+                <li>可在完全隔离的内网环境运行</li>
+            </ul>
+            
+            <div class="highlight-box">
+                <p>对于军工、政府、金融等对数据安全要求极高的行业，DocScanX 是目前市场上少有的真正"零信任"方案。</p>
+            </div>
+            
+            <h3>2. 零成本起步</h3>
+            
+            <p>相比传统 DLP 系统动辄数十万的 License 费用，DocScanX 采用开源模式：</p>
+            
+            <ul>
+                <li>软件本身完全免费</li>
+                <li>无需按文档数量或用户数量付费</li>
+                <li>无需购买昂贵的服务器硬件</li>
+                <li>社区支持，持续迭代</li>
+            </ul>
+            
+            <p>这让中小企业也能拥有企业级的数据安全检测能力。</p>
+            
+            <h3>3. 极简的使用体验</h3>
+            
+            <p>我们深知，安全工具如果难以使用，最终只会被束之高阁。DocScanX 在设计上追求极致的简洁：</p>
+            
+            <ul>
+                <li>一键启动，Web 界面操作</li>
+                <li>拖拽上传，自动识别文档格式</li>
+                <li>自动检测敏感信息，无需配置规则</li>
+                <li>生成直观报告，快速定位风险</li>
+            </ul>
+            
+            <h3>4. 强大的技术内核</h3>
+            
+            <p>DocScanX 基于业界领先的 AI 技术：</p>
+            
+            <ul>
+                <li><strong>PaddleOCR</strong>：中文识别准确率业界领先</li>
+                <li><strong>UIE 模型</strong>：零样本学习，无需训练即可识别敏感信息</li>
+                <li><strong>多格式支持</strong>：30+ 种文档格式，包括 Office、PDF、压缩包等</li>
+                <li><strong>高性能架构</strong>：支持批量处理，断点续传</li>
+            </ul>
+            
+            <h2>四、适用场景分析</h2>
+            
+            <div class="pros-cons">
+                <div class="pros">
+                    <h4>适合使用 DocScanX 的场景</h4>
+                    <ul>
+                        <li>离线或隔离网络环境</li>
+                        <li>预算有限的中小企业</li>
+                        <li>对数据隐私要求极高</li>
+                        <li>需要快速部署使用</li>
+                        <li>希望自主可控</li>
+                        <li>需要定制化开发</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h4>可能不适合的场景</h4>
+                    <ul>
+                        <li>需要实时威胁情报</li>
+                        <li>需要集中管理多分支</li>
+                        <li>缺乏技术人员维护</li>
+                        <li>需要 7×24 小时技术支持</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>五、总结：选择适合你的方案</h2>
+            
+            <p>没有最好的工具，只有最适合的方案。</p>
+            
+            <p>如果您重视数据隐私、预算有限、需要快速部署，DocScanX 是您的理想选择。</p>
+            
+            <p>如果您需要企业级的集中管理、实时威胁情报、全天候技术支持，传统 DLP 或云端服务可能更适合您。</p>
+            
+            <div class="highlight-box">
+                <p>DocScanX 的定位很明确：为那些需要在离线环境中保护数据安全的用户，提供一个简单、可靠、零成本的解决方案。</p>
+            </div>
+            
+            <p>我们相信，数据安全不应该是有钱人的特权。每一个组织，无论大小，都值得拥有保护自身数据安全的能力。</p>
+        </article>
+        
+        <footer class="footer">
+            <p>DocScanX 团队</p>
+            <p>让数据安全触手可及</p>
+        </footer>
+    </div>
+</body>
+</html>
