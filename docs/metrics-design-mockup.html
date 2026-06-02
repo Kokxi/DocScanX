@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DocScanX 指标增强设计稿</title>
+<style>
+  :root {
+    --bg-body: #f0f2f5; --bg-card: #fff; --bg-side: #f8f9fb;
+    --primary: #4f6ef7; --primary-light: #eef1ff;
+    --text: #1e293b; --text-secondary: #64748b; --text-muted: #94a3b8;
+    --border: #e2e6ee; --radius: 10px; --radius-sm: 6px;
+    --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
+    --critical: #dc2626; --high: #f97316; --medium: #eab308; --low: #22c55e;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.07);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg-body); color:var(--text); line-height:1.5; padding:24px 32px; max-width:1200px; margin:0 auto; }
+
+  h1 { font-size:22px; margin-bottom:4px; }
+  h2 { font-size:16px; margin:32px 0 16px; padding-bottom:8px; border-bottom:2px solid var(--primary); }
+  h3 { font-size:14px; margin-bottom:12px; }
+  .page-desc { color:var(--text-secondary); font-size:13px; margin-bottom:20px; }
+
+  /* ===== Stat Cards ===== */
+  .stat-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+  .stat-card { background:var(--bg-card); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow-sm); display:flex; align-items:center; gap:14px; }
+  .stat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .stat-num { font-size:26px; font-weight:700; line-height:1; }
+  .stat-label { font-size:12px; color:var(--text-secondary); margin-top:3px; }
+  .stat-trend { font-size:11px; margin-top:2px; display:flex; align-items:center; gap:3px; }
+  .stat-trend.up { color:var(--success); }
+  .stat-trend.down { color:var(--danger); }
+
+  /* ===== Mini Risk Cards ===== */
+  .risk-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .risk-card { background:var(--bg-card); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow-sm); border-left:4px solid; }
+  .risk-card.critical { border-left-color:var(--critical); }
+  .risk-card.high { border-left-color:var(--high); }
+  .risk-card.medium { border-left-color:var(--medium); }
+  .risk-card.low { border-left-color:var(--low); }
+  .risk-card .rc-num { font-size:22px; font-weight:700; }
+  .risk-card .rc-label { font-size:11px; color:var(--text-secondary); }
+  .risk-card .rc-bar { height:4px; border-radius:2px; margin-top:6px; background:var(--border); }
+  .risk-card .rc-bar-fill { height:100%; border-radius:2px; }
+  .rc-bar-fill.critical { background:var(--critical); }
+  .rc-bar-fill.high { background:var(--high); }
+  .rc-bar-fill.medium { background:var(--medium); }
+  .rc-bar-fill.low { background:var(--low); }
+
+  /* ===== Horizontal Bars (Entity TOP) ===== */
+  .bar-list { display:flex; flex-direction:column; gap:8px; }
+  .bar-row { display:flex; align-items:center; gap:10px; }
+  .bar-label { width:60px; font-size:12px; text-align:right; flex-shrink:0; color:var(--text-secondary); }
+  .bar-track { flex:1; height:20px; background:var(--bg-side); border-radius:4px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:4px; transition:width .3s; }
+  .bar-count { width:40px; font-size:12px; color:var(--text-secondary); flex-shrink:0; }
+
+  /* ===== Cards ===== */
+  .card { background:var(--bg-card); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow-sm); margin-bottom:16px; }
+  .card-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+
+  /* ===== Grid Layouts ===== */
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+
+  /* ===== Summary Row ===== */
+  .summary-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  .summary-card { background:var(--bg-card); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow-sm); text-align:center; }
+  .summary-num { font-size:32px; font-weight:700; }
+  .summary-label { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+
+  /* ===== Duration Bar ===== */
+  .duration-bar { display:flex; gap:2px; height:8px; border-radius:4px; overflow:hidden; margin-top:4px; }
+  .duration-seg { height:100%; border-radius:1px; }
+  .duration-legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; font-size:11px; color:var(--text-secondary); }
+  .duration-legend span { display:flex; align-items:center; gap:4px; }
+  .dl-dot { width:8px; height:8px; border-radius:2px; }
+
+  /* ===== Percent Circle ===== */
+  .pct-circle { width:80px; height:80px; margin:0 auto; }
+  .pct-circle svg { transform:rotate(-90deg); }
+  .pct-text { font-size:14px; font-weight:700; fill:var(--text); }
+
+  /* ===== Table ===== */
+  .mini-table { width:100%; font-size:13px; border-collapse:collapse; }
+  .mini-table td { padding:8px 10px; border-bottom:1px solid var(--border); }
+  .mini-table tr:last-child td { border-bottom:none; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:500; }
+  .badge-done { background:#dcfce7; color:#16a34a; }
+  .badge-fail { background:#fef2f2; color:#dc2626; }
+
+  /* ===== Tag ===== */
+  .tag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:4px; margin-right:4px; }
+  .tag-blue { background:var(--primary-light); color:var(--primary); }
+  .tag-green { background:#dcfce7; color:#16a34a; }
+  .tag-red { background:#fef2f2; color:#dc2626; }
+  .tag-orange { background:#fff7ed; color:#ea580c; }
+
+  /* ===== Responsive ===== */
+  @media (max-width:768px) {
+    .stat-cards { grid-template-columns:repeat(2,1fr); }
+    .risk-cards { grid-template-columns:repeat(2,1fr); }
+    .grid-2,.grid-3,.summary-row { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>DocScanX 指标增强设计稿</h1>
+<p class="page-desc">新增指标用 ★ 标注，纯前端计算，无需新依赖</p>
+
+<!-- ==================== 1. 工作台 ==================== -->
+<h2>1. 工作台</h2>
+
+<!-- 4 张主统计卡 + 趋势 -->
+<div class="stat-cards">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#4f6ef7"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    <div>
+      <div class="stat-num">23</div>
+      <div class="stat-label">总任务</div>
+      <div class="stat-trend up">▲ 12% <span style="color:var(--text-muted);font-weight:400">vs 上周</span></div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#22c55e"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+    <div>
+      <div class="stat-num">1,247</div>
+      <div class="stat-label">总文件</div>
+      <div class="stat-trend up">▲ 8% <span style="color:var(--text-muted);font-weight:400">vs 上周</span></div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#f59e0b"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    <div>
+      <div class="stat-num">89</div>
+      <div class="stat-label">识别主体</div>
+      <div class="stat-trend down">▼ 3% <span style="color:var(--text-muted);font-weight:400">vs 上周</span></div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#ef4444"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div>
+      <div class="stat-num">3,562</div>
+      <div class="stat-label">敏感字段</div>
+      <div class="stat-trend up">▲ 15% <span style="color:var(--text-muted);font-weight:400">vs 上周</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ★ 新增：风险分布卡片 + 实体TOP5 双列 -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header-row"><h3>★ 风险主体分布</h3><span class="tag tag-blue">全部任务汇总</span></div>
+    <div class="risk-cards" style="margin-bottom:0">
+      <div class="risk-card critical">
+        <div class="rc-num">5</div><div class="rc-label">极高风险</div>
+        <div class="rc-bar"><div class="rc-bar-fill critical" style="width:8%"></div></div>
+      </div>
+      <div class="risk-card high">
+        <div class="rc-num">18</div><div class="rc-label">高风险</div>
+        <div class="rc-bar"><div class="rc-bar-fill high" style="width:28%"></div></div>
+      </div>
+      <div class="risk-card medium">
+        <div class="rc-num">34</div><div class="rc-label">中风险</div>
+        <div class="rc-bar"><div class="rc-bar-fill medium" style="width:52%"></div></div>
+      </div>
+      <div class="risk-card low">
+        <div class="rc-num">32</div><div class="rc-label">低风险</div>
+        <div class="rc-bar"><div class="rc-bar-fill low" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header-row"><h3>★ 实体类型 TOP5</h3><span class="tag tag-green">所有报告</span></div>
+    <div class="bar-list">
+      <div class="bar-row"><span class="bar-label">身份证</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--primary)"></div></div><span class="bar-count">1,024</span></div>
+      <div class="bar-row"><span class="bar-label">姓名</span><div class="bar-track"><div class="bar-fill" style="width:87%;background:#6366f1"></div></div><span class="bar-count">892</span></div>
+      <div class="bar-row"><span class="bar-label">手机</span><div class="bar-track"><div class="bar-fill" style="width:65%;background:#8b5cf6"></div></div><span class="bar-count">668</span></div>
+      <div class="bar-row"><span class="bar-label">银行卡</span><div class="bar-track"><div class="bar-fill" style="width:42%;background:#a78bfa"></div></div><span class="bar-count">431</span></div>
+      <div class="bar-row"><span class="bar-label">地址</span><div class="bar-track"><div class="bar-fill" style="width:31%;background:#c4b5fd"></div></div><span class="bar-count">320</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 最近任务 -->
+<div class="card">
+  <div class="card-header-row"><h3>最近任务</h3><span style="color:var(--primary);font-size:12px;cursor:pointer">查看全部 →</span></div>
+  <table class="mini-table">
+    <tr><td style="font-weight:500">2024年员工档案扫描</td><td>48 文件</td><td><span class="badge badge-done">已完成</span></td><td style="color:var(--text-muted)">06-02 14:30</td></tr>
+    <tr><td>财务部合同扫描</td><td>126 文件</td><td><span class="badge badge-done">已完成</span></td><td style="color:var(--text-muted)">06-02 10:15</td></tr>
+    <tr><td>客户信息表扫描</td><td>32 文件</td><td><span class="badge badge-fail">失败</span></td><td style="color:var(--text-muted)">06-01 16:00</td></tr>
+  </table>
+</div>
+
+
+<!-- ==================== 2. 扫描任务 → 报告视图 ==================== -->
+<h2>2. 扫描任务 → 报告视图（点击"报告"后）</h2>
+
+<!-- 4 张报告统计卡 -->
+<div class="stat-cards">
+  <div class="stat-card"><div class="stat-icon" style="background:#4f6ef7"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div><div><div class="stat-num">126</div><div class="stat-label">已处理</div></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#f59e0b"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="7" r="4"/></svg></div><div><div class="stat-num">34</div><div class="stat-label">涉及主体</div></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#ef4444"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div class="stat-num">1,204</div><div class="stat-label">敏感字段</div></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#94a3b8"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg></div><div><div class="stat-num">3</div><div class="stat-label">异常文件</div></div></div>
+</div>
+
+<!-- ★ 新增：实体类型分布 + 处理耗时 双列 -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header-row"><h3>★ 实体类型分布</h3><span class="tag tag-blue">本次任务</span></div>
+    <div class="bar-list">
+      <div class="bar-row"><span class="bar-label">身份证</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--primary)"></div></div><span class="bar-count">312</span></div>
+      <div class="bar-row"><span class="bar-label">姓名</span><div class="bar-track"><div class="bar-fill" style="width:82%;background:#6366f1"></div></div><span class="bar-count">256</span></div>
+      <div class="bar-row"><span class="bar-label">手机</span><div class="bar-track"><div class="bar-fill" style="width:58%;background:#8b5cf6"></div></div><span class="bar-count">180</span></div>
+      <div class="bar-row"><span class="bar-label">银行卡</span><div class="bar-track"><div class="bar-fill" style="width:35%;background:#a78bfa"></div></div><span class="bar-count">110</span></div>
+      <div class="bar-row"><span class="bar-label">地址</span><div class="bar-track"><div class="bar-fill" style="width:22%;background:#c4b5fd"></div></div><span class="bar-count">68</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header-row"><h3>★ 处理耗时</h3><span class="tag tag-green">平均每文件</span></div>
+    <!-- 堆叠耗时条 -->
+    <div class="duration-bar">
+      <div class="duration-seg" style="width:22%;background:#4f6ef7"></div>
+      <div class="duration-seg" style="width:6%;background:#f59e0b"></div>
+      <div class="duration-seg" style="width:38%;background:#22c55e"></div>
+      <div class="duration-seg" style="width:24%;background:#8b5cf6"></div>
+      <div class="duration-seg" style="width:10%;background:#94a3b8"></div>
+    </div>
+    <div class="duration-legend">
+      <span><span class="dl-dot" style="background:#4f6ef7"></span> 解析 0.8s</span>
+      <span><span class="dl-dot" style="background:#f59e0b"></span> PDF判定 0.2s</span>
+      <span><span class="dl-dot" style="background:#22c55e"></span> OCR 1.4s</span>
+      <span><span class="dl-dot" style="background:#8b5cf6"></span> 抽取+校验 0.9s</span>
+      <span><span class="dl-dot" style="background:#94a3b8"></span> 脱敏+IPE 0.4s</span>
+    </div>
+    <div style="margin-top:14px;font-size:12px;color:var(--text-secondary);display:flex;gap:24px">
+      <div>总文件: <strong>126</strong></div>
+      <div>平均耗时: <strong>3.7s</strong></div>
+      <div>最长文件: <strong>12.3s</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ★ 新增：文件类型分布 + 风险分布 -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header-row"><h3>★ 文件类型分布</h3></div>
+    <div class="bar-list">
+      <div class="bar-row"><span class="bar-label">PDF</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#4f6ef7"></div></div><span class="bar-count">52</span></div>
+      <div class="bar-row"><span class="bar-label">DOCX</span><div class="bar-track"><div class="bar-fill" style="width:67%;background:#6366f1"></div></div><span class="bar-count">35</span></div>
+      <div class="bar-row"><span class="bar-label">XLSX</span><div class="bar-track"><div class="bar-fill" style="width:44%;background:#8b5cf6"></div></div><span class="bar-count">23</span></div>
+      <div class="bar-row"><span class="bar-label">图片</span><div class="bar-track"><div class="bar-fill" style="width:21%;background:#a78bfa"></div></div><span class="bar-count">11</span></div>
+      <div class="bar-row"><span class="bar-label">其他</span><div class="bar-track"><div class="bar-fill" style="width:10%;background:#c4b5fd"></div></div><span class="bar-count">5</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header-row"><h3>★ 风险等级分布</h3></div>
+    <div class="bar-list">
+      <div class="bar-row"><span class="bar-label">极高</span><div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--critical)"></div></div><span class="bar-count">4人</span></div>
+      <div class="bar-row"><span class="bar-label">高</span><div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--high)"></div></div><span class="bar-count">12人</span></div>
+      <div class="bar-row"><span class="bar-label">中</span><div class="bar-track"><div class="bar-fill" style="width:71%;background:var(--medium)"></div></div><span class="bar-count">24人</span></div>
+      <div class="bar-row"><span class="bar-label">低</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--low)"></div></div><span class="bar-count">34人</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 异常文件 (existing) -->
+<div class="card" style="opacity:0.6">
+  <div class="card-header-row"><h3>异常文件统计</h3></div>
+  <div style="font-size:12px;color:var(--text-secondary)">（现有功能，不变）3 个异常文件</div>
+</div>
+
+
+<!-- ==================== 3. 数据主体 ==================== -->
+<h2>3. 数据主体</h2>
+
+<!-- ★ 新增：摘要行 -->
+<div class="summary-row">
+  <div class="summary-card">
+    <div class="summary-num" style="color:var(--critical)">5</div>
+    <div class="summary-label">极高风险</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-num" style="color:var(--high)">18</div>
+    <div class="summary-label">高风险</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-num">2.8</div>
+    <div class="summary-label">★ 人均关联文件数</div>
+  </div>
+</div>
+
+<!-- ★ 新增：高风险占比大数字 -->
+<div class="card">
+  <div style="display:flex;align-items:center;gap:24px">
+    <div class="pct-circle">
+      <svg viewBox="0 0 36 36" width="80" height="80">
+        <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--border)" stroke-width="3"/>
+        <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--danger)" stroke-width="3"
+          stroke-dasharray="16.3 97.4" stroke-linecap="round"/>
+        <text x="18" y="21" text-anchor="middle" class="pct-text">26%</text>
+      </svg>
+    </div>
+    <div>
+      <div style="font-size:14px;font-weight:600">★ 高/极高风险占比</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">89 人中 23 人为高或极高风险</div>
+      <div style="margin-top:4px"><span class="tag tag-red">5 极高</span><span class="tag tag-orange">18 高</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="opacity:0.6">
+  <div style="font-size:12px;color:var(--text-secondary)">（现有功能，不变）主体列表 + 筛选 + 详情抽屉</div>
+</div>
+
+
+<!-- ==================== 4. 系统日志 ==================== -->
+<h2>4. 系统日志</h2>
+
+<div class="grid-3">
+  <div class="card" style="text-align:center">
+    <div class="summary-num" style="font-size:28px;color:var(--primary)">47</div>
+    <div class="summary-label">★ 今日操作次数</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div class="summary-num" style="font-size:28px;color:var(--danger)">2.1%</div>
+    <div class="summary-label">★ 失败率</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div class="summary-num" style="font-size:28px;color:var(--success)">97.9%</div>
+    <div class="summary-label">★ 各阶段成功率</div>
+  </div>
+</div>
+
+<!-- ★ 新增：各阶段成功率 -->
+<div class="card">
+  <div class="card-header-row"><h3>★ 处理阶段成功率（全部任务汇总）</h3></div>
+  <div class="bar-list">
+    <div class="bar-row"><span class="bar-label">解析</span><div class="bar-track"><div class="bar-fill" style="width:99%;background:var(--success)"></div></div><span class="bar-count">99%</span></div>
+    <div class="bar-row"><span class="bar-label">OCR</span><div class="bar-track"><div class="bar-fill" style="width:94%;background:var(--success)"></div></div><span class="bar-count">94%</span></div>
+    <div class="bar-row"><span class="bar-label">抽取</span><div class="bar-track"><div class="bar-fill" style="width:97%;background:var(--success)"></div></div><span class="bar-count">97%</span></div>
+    <div class="bar-row"><span class="bar-label">校验</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--success)"></div></div><span class="bar-count">100%</span></div>
+    <div class="bar-row"><span class="bar-label">脱敏</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--success)"></div></div><span class="bar-count">100%</span></div>
+    <div class="bar-row"><span class="bar-label">IPE</span><div class="bar-track"><div class="bar-fill" style="width:96%;background:var(--success)"></div></div><span class="bar-count">96%</span></div>
+  </div>
+</div>
+
+<div class="card" style="opacity:0.6">
+  <div style="font-size:12px;color:var(--text-secondary)">（现有功能，不变）审计日志表 + 文件轨迹表</div>
+</div>
+
+</body>
+</html>

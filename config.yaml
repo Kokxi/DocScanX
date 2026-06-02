@@ -1,19 +1,44 @@
-# DocScanX 默认配置
-# 用户可修改 config.yaml 覆盖以下值
-
 scan:
-  default_path: ""
+  default_path: ''
   include_subdir: true
   extract_archive: true
   file_extensions:
-    archive: [.zip, .rar, .7z]
-    office_new: [.docx, .xlsx, .pptx]
-    office_old: [.doc, .xls, .ppt]
-    pdf: [.pdf]
-    image: [.jpg, .jpeg, .png, .bmp, .tiff]
-    text: [.txt, .csv, .md, .log]
-    structured: [.json, .xml]
-    dev: [.py, .java, .js, .html, .sql, .css, .cpp]
+    archive:
+    - .zip
+    - .rar
+    - .7z
+    office_new:
+    - .docx
+    - .xlsx
+    - .pptx
+    office_old:
+    - .doc
+    - .xls
+    - .ppt
+    pdf:
+    - .pdf
+    image:
+    - .jpg
+    - .jpeg
+    - .png
+    - .bmp
+    - .tiff
+    text:
+    - .txt
+    - .csv
+    - .md
+    - .log
+    structured:
+    - .json
+    - .xml
+    dev:
+    - .py
+    - .java
+    - .js
+    - .html
+    - .sql
+    - .css
+    - .cpp
   extension_groups_default:
     archive: true
     office_new: true
@@ -23,66 +48,49 @@ scan:
     text: true
     structured: false
     dev: false
-
+  max_file_size_mb: 50
 model:
   uie:
     version: mini
-    schema: [name, id_card, phone, bank_card, address, email, wechat, birthday, job_no, plate_no, passport, gender]
+    schema:
+    - name
+    - id_card
+    - phone
+    - bank_card
+    - address
+    - email
+    - wechat
+    - birthday
+    - job_no
+    - plate_no
+    - passport
+    - gender
   ocr:
     engine: rapidocr
-
 inference:
   confidence_threshold: 0.65
   text_chunk_size: 512
   text_chunk_overlap: 64
-
+  mask_enabled: true
 pdf:
   text_threshold: 20
-
 task:
   file_timeout: 300
   max_retry: 3
   log_detail: true
-
 memory:
   max_memory_mb: 2048
   gc_watermark: 0.8
   temp_clean_after_task: true
-
 concurrency:
   file_parse_workers: 2
   ocr_workers: 1
   uie_workers: 1
-
-# --- 二期扩展：大模型配置 ---
-# llm:
-#   enable: false
-#   api_base: ""
-#   api_key: ""
-#   model: ""
-#   timeout: 30
-#   max_retries: 3
-#   cross_validation: false
-#   confidence_boost: 0.8
-
-# --- 二期扩展：远程文件源 ---
-# remote_sources:
-#   - name: "Example-Server"
-#     protocol: ftp
-#     host: ""
-#     port: 21
-#     username: ""
-#     password: ""
-#     base_path: "/"
-#     max_file_size_mb: 500
-#     connect_timeout: 30
-
 log:
   level: INFO
   max_days: 7
   max_size_mb: 10
   path: ./logs
-
 path:
   output_dir: ./output
   temp_dir: ./temp

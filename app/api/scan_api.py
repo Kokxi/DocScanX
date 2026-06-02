@@ -34,7 +34,8 @@ async def start_scan(request: Request):
     task_name = body.get("name", "")
     include_subdir = body.get("include_subdir", True)
     extract_archive = body.get("extract_archive", True)
-    mask_enabled = body.get("mask_enabled", True)
+    cfg_default_mask = getattr(getattr(config_module.config, "inference", None), "mask_enabled", True) if config_module.config else True
+    mask_enabled = body.get("mask_enabled", cfg_default_mask)
     ext_groups = body.get("ext_groups")
     if ext_groups and isinstance(ext_groups, dict) and not any(ext_groups.values()):
         ext_groups = None

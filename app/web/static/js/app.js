@@ -109,6 +109,41 @@ createApp({
 
     const recentTasks = ref([]);
 
+    // ---- Dashboard computed metrics ----
+    const dashboardRiskDist = computed(function() {
+      var dist = {critical:0, high:0, medium:0, low:0};
+      persons.value.forEach(function(p) {
+        var lv = p.riskLevel || 'low';
+        if (dist[lv] !== undefined) dist[lv]++;
+      });
+      var total = dist.critical + dist.high + dist.medium + dist.low || 1;
+      return [
+        {label:'极高风险', level:'critical', count:dist.critical, pct:Math.round(dist.critical/total*100), color:'#dc2626'},
+        {label:'高风险', level:'high', count:dist.high, pct:Math.round(dist.high/total*100), color:'#f97316'},
+        {label:'中风险', level:'medium', count:dist.medium, pct:Math.round(dist.medium/total*100), color:'#eab308'},
+        {label:'低风险', level:'low', count:dist.low, pct:Math.round(dist.low/total*100), color:'#22c55e'}
+      ];
+    });
+
+    const entityTop5 = computed(function() {
+      var counts = {};
+      persons.value.forEach(function(p) {
+        if (p.id_card) counts['id_card'] = (counts['id_card']||0) + 1;
+        if (p.name) counts['name'] = (counts['name']||0) + 1;
+        if (p.phone) counts['phone'] = (counts['phone']||0) + 1;
+        if (p.bank_card) counts['bank_card'] = (counts['bank_card']||0) + 1;
+        if (p.address) counts['address'] = (counts['address']||0) + 1;
+        if (p.email) counts['email'] = (counts['email']||0) + 1;
+        if (p.wechat) counts['wechat'] = (counts['wechat']||0) + 1;
+      });
+      var sorted = Object.entries(counts).sort(function(a,b) { return b[1] - a[1]; }).slice(0, 5);
+      var max = sorted.length > 0 ? sorted[0][1] : 1;
+      var colors = ['#4f6ef7','#6366f1','#8b5cf6','#a78bfa','#c4b5fd'];
+      return sorted.map(function(e, i) {
+        return {type: e[0], count: e[1], label: entityLabels[e[0]] || e[0], pct: Math.round(e[1]/max*100), color: colors[i]};
+      });
+    });
+
     // ---- Tasks ----
     const showWizard = ref(false);
     const wizardStep = ref(1);
@@ -130,6 +165,16 @@ createApp({
     });
     const taskFilter = ref({ status:'', search:'' });
     const allTasks = ref([]);
+
+    const taskStats = computed(function() {
+      var tasks = allTasks.value;
+      return {
+        total: tasks.length,
+        completed: tasks.filter(function(t) { return t.status === '已完成'; }).length,
+        failed: tasks.filter(function(t) { return t.status === '失败'; }).length,
+        persons: tasks.reduce(function(s, t) { return s + (t.persons || 0); }, 0)
+      };
+    });
 
     const filteredTasks = computed(() => {
       let list = allTasks.value;
@@ -228,6 +273,72 @@ createApp({
           if (etype.includes('解析') || etype.includes('parse')) return {path: f.path, type: '解析失败'};
           return {path: f.path, type: '解析失败'};
         });
+    });
+
+    // ---- Report computed metrics ----
+    const entityDistribution = computed(function() {
+      var counts = {};
+      (taskFileDetails.value || []).forEach(function(fd) {
+        (fd.items || []).forEach(function(item) {
+          counts[item.type] = (counts[item.type]||0) + item.count;
+        });
+      });
+      var sorted = Object.entries(counts).sort(function(a,b) { return b[1] - a[1]; });
+      var max = sorted.length > 0 ? sorted[0][1] : 1;
+      var colors = ['#4f6ef7','#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#7c3aed','#6d28d9'];
+      return sorted.map(function(e, i) {
+        return {type: e[0], count: e[1], label: entityLabels[e[0]] || e[0], pct: Math.round(e[1]/max*100), color: colors[i % colors.length]};
+      });
+    });
+
+    const fileTypeDistribution = computed(function() {
+      var counts = {};
+      (taskFileDetails.value || []).forEach(function(fd) {
+        var ext = (fd.file || '').split('.').pop().toLowerCase();
+        var map = {pdf:'PDF', docx:'DOCX', doc:'DOC', xlsx:'XLSX', xls:'XLS', pptx:'PPTX', ppt:'PPT',
+                   jpg:'JPG', jpeg:'JPEG', png:'PNG', bmp:'BMP', tiff:'TIFF',
+                   txt:'TXT', csv:'CSV', json:'JSON', xml:'XML', md:'MD', log:'LOG',
+                   zip:'ZIP', rar:'RAR', '7z':'7Z'};
+        var label = map[ext] || ext.toUpperCase() || '其他';
+        counts[label] = (counts[label]||0) + 1;
+      });
+      var sorted = Object.entries(counts).sort(function(a,b) { return b[1] - a[1]; });
+      var max = sorted.length > 0 ? sorted[0][1] : 1;
+      var colors = ['#4f6ef7','#6366f1','#8b5cf6','#a78bfa','#c4b5fd'];
+      return sorted.map(function(e, i) {
+        return {type: e[0], count: e[1], pct: Math.round(e[1]/max*100), color: colors[i % colors.length]};
+      });
+    });
+
+    var _stageLabels = {解析:'解析', PDF判定:'PDF判定', OCR:'OCR', 抽取:'抽取', 校验:'校验', 脱敏:'脱敏', IPE:'IPE'};
+    var _stageColors = {解析:'#4f6ef7', PDF判定:'#f59e0b', OCR:'#22c55e', 抽取:'#8b5cf6', 校验:'#6366f1', 脱敏:'#94a3b8', IPE:'#ec4899'};
+    var _stageOrder = ['解析','PDF判定','OCR','抽取','校验','脱敏','IPE'];
+
+    const processingDuration = computed(function() {
+      if (!reportDetail.value || !reportDetail.value.files) return {stages:[], totalAvg:'-', totalMax:'-', fileCount:0};
+      var files = reportDetail.value.files;
+      var stageTotals = {};
+      var stageCounts = {};
+      var fileTotals = [];
+      files.forEach(function(f) {
+        var fileTotal = 0;
+        (f.traces || []).forEach(function(t) {
+          var s = t.stage || '';
+          var dur = (t.duration_ms || 0) / 1000;
+          stageTotals[s] = (stageTotals[s]||0) + dur;
+          stageCounts[s] = (stageCounts[s]||0) + 1;
+          fileTotal += dur;
+        });
+        if (fileTotal > 0) fileTotals.push(fileTotal);
+      });
+      var stages = _stageOrder.filter(function(s) { return stageTotals[s]; }).map(function(s) {
+        return {name: s, label: _stageLabels[s]||s, duration: stageTotals[s].toFixed(1), color: _stageColors[s]||'#94a3b8'};
+      });
+      var totalDur = stages.reduce(function(sum, s) { return sum + parseFloat(s.duration); }, 0);
+      stages.forEach(function(s) { s.pct = totalDur > 0 ? Math.round(parseFloat(s.duration)/totalDur*100) : 0; });
+      var avg = fileTotals.length > 0 ? (fileTotals.reduce(function(a,b){return a+b;},0) / fileTotals.length).toFixed(1) : '-';
+      var max = fileTotals.length > 0 ? Math.max.apply(null, fileTotals).toFixed(1) : '-';
+      return {stages: stages, totalAvg: avg, totalMax: max, fileCount: files.length};
     });
 
     function downloadAnomalousList() {
@@ -489,6 +600,38 @@ createApp({
       personRelatedLoading.value = false;
     }
 
+    // ---- Subject metrics ----
+    const subjectRiskSummary = computed(function() {
+      var dist = {critical:0, high:0, medium:0, low:0};
+      persons.value.forEach(function(p) {
+        var lv = p.riskLevel || 'low';
+        if (dist[lv] !== undefined) dist[lv]++;
+      });
+      return [
+        {label:'极高风险', level:'critical', count:dist.critical, color:'#dc2626'},
+        {label:'高风险', level:'high', count:dist.high, color:'#f97316'},
+        {label:'中风险', level:'medium', count:dist.medium, color:'#eab308'},
+        {label:'低风险', level:'low', count:dist.low, color:'#22c55e'}
+      ];
+    });
+
+    var _riskPctColors = {critical:'#dc2626', high:'#f97316', medium:'#eab308', low:'#22c55e'};
+
+    const highRiskCount = computed(function() {
+      return persons.value.filter(function(p) { return p.riskLevel === 'critical' || p.riskLevel === 'high'; }).length;
+    });
+
+    const highRiskRatio = computed(function() {
+      var total = persons.value.length || 1;
+      return Math.round(highRiskCount.value / total * 100);
+    });
+
+    const avgFilesPerPerson = computed(function() {
+      var total = persons.value.length || 1;
+      var sum = persons.value.reduce(function(s, p) { return s + (p.files || 1); }, 0);
+      return (sum / total).toFixed(1);
+    });
+
     function closePersonDetail() { selectedPerson.value = null; }
 
     const personSensitiveFields = computed(() => {
@@ -508,7 +651,47 @@ createApp({
       maxFileSize:50, timeout:300, tempDir:'./temp'
     });
 
+    const settingsView = ref('main');
     const settingsLoaded = ref(false);
+
+    // ---- Risk scoring config ----
+    const riskWeights = [
+      {type:'id_card', label:'身份证', weight:0.30, color:'#ef4444'},
+      {type:'bank_card', label:'银行卡', weight:0.25, color:'#f97316'},
+      {type:'passport', label:'护照', weight:0.25, color:'#f97316'},
+      {type:'phone', label:'手机', weight:0.15, color:'#f59e0b'},
+      {type:'address', label:'地址', weight:0.10, color:'#eab308'},
+      {type:'email', label:'邮箱', weight:0.10, color:'#eab308'},
+      {type:'wechat', label:'微信', weight:0.05, color:'#22c55e'},
+      {type:'birthday', label:'生日', weight:0.05, color:'#22c55e'},
+      {type:'plate_no', label:'车牌', weight:0.05, color:'#22c55e'},
+      {type:'job_no', label:'工号', weight:0.03, color:'#94a3b8'},
+      {type:'gender', label:'性别', weight:0.03, color:'#94a3b8'},
+      {type:'name', label:'姓名', weight:0.02, color:'#94a3b8'}
+    ];
+    var _thresholds = [
+      {min:0.70, label:'极高', level:'critical', color:'#dc2626'},
+      {min:0.45, label:'高', level:'high', color:'#f97316'},
+      {min:0.20, label:'中', level:'medium', color:'#eab308'},
+      {min:0.00, label:'低', level:'low', color:'#22c55e'}
+    ];
+    var _maxWeight = 0.30;
+
+    var riskExampleSelected = ref({});
+    var riskExampleScore = computed(function() {
+      var score = 0;
+      riskWeights.forEach(function(w) {
+        if (riskExampleSelected.value[w.type]) score += w.weight;
+      });
+      return Math.min(score, 1.0);
+    });
+    var riskExampleLevel = computed(function() {
+      var s = riskExampleScore.value;
+      for (var i = 0; i < _thresholds.length; i++) {
+        if (s >= _thresholds[i].min) return _thresholds[i];
+      }
+      return _thresholds[_thresholds.length-1];
+    });
 
     function configToSettings(cfg) {
       return {
@@ -669,11 +852,43 @@ createApp({
             totalPersons += r.total_persons || 0;
             totalEntities += r.total_entities || 0;
           });
+          var now = new Date();
+          var weekAgo = new Date(now - 7*24*60*60*1000);
+          var twoWeeksAgo = new Date(now - 14*24*60*60*1000);
+          function _countInRange(list, start, end) {
+            return list.filter(function(r) { var d = new Date(r.generated_at); return d >= start && d < end; });
+          }
+          var thisWeek = _countInRange(reports, weekAgo, now);
+          var lastWeek = _countInRange(reports, twoWeeksAgo, weekAgo);
+          function _trend(cur, prev) {
+            if (prev === 0) return cur > 0 ? {dir:'up', pct:100} : {dir:'flat', pct:0};
+            var pct = Math.round((cur - prev) / prev * 100);
+            return {dir: pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat', pct: Math.abs(pct)};
+          }
+          var taskTrend = _trend(thisWeek.length, lastWeek.length);
+          var fileTrend = _trend(
+            thisWeek.reduce(function(s,r){return s+(r.total_files||0);},0),
+            lastWeek.reduce(function(s,r){return s+(r.total_files||0);},0)
+          );
+          var personTrend = _trend(
+            thisWeek.reduce(function(s,r){return s+(r.total_persons||0);},0),
+            lastWeek.reduce(function(s,r){return s+(r.total_persons||0);},0)
+          );
+          var entityTrend = _trend(
+            thisWeek.reduce(function(s,r){return s+(r.total_entities||0);},0),
+            lastWeek.reduce(function(s,r){return s+(r.total_entities||0);},0)
+          );
+          function _trendHtml(t) {
+            if (t.dir === 'flat') return '<span style="color:var(--text-muted)">→ 持平</span>';
+            var arrow = t.dir === 'up' ? '▲' : '▼';
+            var cls = t.dir === 'up' ? 'up' : 'down';
+            return '<span class="stat-trend ' + cls + '">' + arrow + ' ' + t.pct + '% vs 上周</span>';
+          }
           stats.value = [
-            { label:'总任务', value: reports.length, bg:'#4f6ef7', icon: stats.value[0].icon },
-            { label:'总文件', value: totalFiles, bg:'#22c55e', icon: stats.value[1].icon },
-            { label:'主体', value: totalPersons, bg:'#f59e0b', icon: stats.value[2].icon },
-            { label:'敏感项', value: totalEntities, bg:'#ef4444', icon: stats.value[3].icon }
+            { label:'总任务', value: reports.length, bg:'#4f6ef7', icon: stats.value[0].icon, trend: _trendHtml(taskTrend) },
+            { label:'总文件', value: totalFiles, bg:'#22c55e', icon: stats.value[1].icon, trend: _trendHtml(fileTrend) },
+            { label:'主体', value: totalPersons, bg:'#f59e0b', icon: stats.value[2].icon, trend: _trendHtml(personTrend) },
+            { label:'敏感项', value: totalEntities, bg:'#ef4444', icon: stats.value[3].icon, trend: _trendHtml(entityTrend) }
           ];
           if (!selectedReportTask.value && completed.length > 0) {
             selectedReportTask.value = completed[0].id;
@@ -801,14 +1016,18 @@ createApp({
       toasts, showToast, removeToast,
       folderSvg, fileSvg,
       stats, quickScanResult, quickScanLoading, quickScanFile, recentTasks,
+      dashboardRiskDist, entityTop5,
       showWizard, wizardStep, wizardData, remoteTesting, taskView, openWizard, wizardNext, wizardPrev,
-      onFileSelected, browseFolder, testRemoteConnection, backToTaskList, taskFilter, allTasks, filteredTasks,
+      onFileSelected, browseFolder, testRemoteConnection, backToTaskList, taskFilter, allTasks, filteredTasks, taskStats,
       selectedTaskFile, taskFileDetails, taskSensitiveTotal, viewFileDetail, viewReport,
       anomalousFiles, downloadAnomalousList, exportReport,
+      entityDistribution, fileTypeDistribution, processingDuration,
       selectedReportTask, reportStats, reportProgress, reportDetail, riskDistribution, entityLabels, entityLabel, fileBasename, startTask,
       personFilter, persons, personPage, personTotal, personPerPage, filteredPersons, loadPersons,
       selectedPerson, showPersonDetail, closePersonDetail, personSensitiveFields, personRelatedFiles, personRelatedLoading,
-      settings, resetSettings, saveSettings,
+      subjectRiskSummary, highRiskCount, highRiskRatio, avgFilesPerPerson,
+      settings, resetSettings, saveSettings, settingsView,
+      riskWeights, riskExampleSelected, riskExampleScore, riskExampleLevel,
       logFilter, logView, auditLogs, filteredAuditLogs, fileTraces, traceReportId, loadFileTraces
     };
   }

@@ -294,6 +294,86 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
   to { transform:rotate(360deg); }
 }
 
+/* ===== Stat Card Trend ===== */
+.stat-trend { font-size:11px; margin-top:2px; display:flex; align-items:center; gap:3px; }
+.stat-trend.up { color:var(--success); }
+.stat-trend.down { color:var(--danger); }
+
+/* ===== Risk Mini Cards ===== */
+.risk-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.risk-card { background:var(--bg-card); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow-sm); border-left:4px solid; }
+.risk-card.critical { border-left-color:#dc2626; }
+.risk-card.high { border-left-color:#f97316; }
+.risk-card.medium { border-left-color:#eab308; }
+.risk-card.low { border-left-color:var(--success); }
+.risk-card .rc-num { font-size:22px; font-weight:700; }
+.risk-card .rc-label { font-size:11px; color:var(--text-secondary); }
+.risk-card .rc-bar { height:4px; border-radius:2px; margin-top:6px; background:var(--border); }
+.risk-card .rc-bar-fill { height:100%; border-radius:2px; }
+.rc-bar-fill.critical { background:#dc2626; }
+.rc-bar-fill.high { background:#f97316; }
+.rc-bar-fill.medium { background:#eab308; }
+.rc-bar-fill.low { background:var(--success); }
+
+/* ===== Horizontal Bar List ===== */
+.bar-list { display:flex; flex-direction:column; gap:8px; }
+.bar-row { display:flex; align-items:center; gap:10px; }
+.bar-label { width:56px; font-size:12px; text-align:right; flex-shrink:0; color:var(--text-secondary); white-space:nowrap; }
+.bar-track { flex:1; height:20px; background:var(--bg-side); border-radius:4px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; }
+.bar-count { width:44px; font-size:12px; color:var(--text-secondary); flex-shrink:0; text-align:right; }
+
+/* ===== Summary Row ===== */
+.summary-row { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:20px; }
+.summary-card { background:var(--bg-card); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow-sm); text-align:center; }
+.summary-num { font-size:32px; font-weight:700; }
+
+/* ===== Duration Bar ===== */
+.duration-bar { display:flex; gap:2px; height:8px; border-radius:4px; overflow:hidden; margin-top:4px; }
+.duration-seg { height:100%; border-radius:1px; }
+.duration-legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; font-size:11px; color:var(--text-secondary); }
+.duration-legend span { display:flex; align-items:center; gap:4px; }
+.dl-dot { width:8px; height:8px; border-radius:2px; }
+
+/* ===== Ring Chart ===== */
+.pct-ring { width:80px; height:80px; flex-shrink:0; }
+.pct-ring svg { transform:rotate(-90deg); }
+.pct-ring-text { font-size:14px; font-weight:700; fill:var(--text); }
+
+/* ===== Stat Card Inner Grid ===== */
+.stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+.card-tag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:4px; }
+.card-tag-blue { background:var(--primary-light); color:var(--primary); }
+.card-tag-green { background:#dcfce7; color:#16a34a; }
+
+/* ===== Risk Stacked Bar ===== */
+.risk-stacked-bar { display:flex; height:32px; border-radius:6px; overflow:hidden; gap:2px; }
+.risk-stacked-seg { display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#fff; min-width:0; transition:width .3s; }
+.risk-stacked-seg:first-child { border-radius:6px 0 0 6px; }
+.risk-stacked-seg:last-child { border-radius:0 6px 6px 0; }
+.risk-stacked-seg:only-child { border-radius:6px; }
+.risk-stacked-seg.small { font-size:11px; }
+.risk-stats-row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:13px; color:var(--text-secondary); }
+.risk-stats-row strong { color:var(--text); }
+
+/* ===== Risk Scoring Config ===== */
+.risk-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.weight-table { width:100%; font-size:13px; border-collapse:collapse; }
+.weight-table th,.weight-table td { padding:8px 12px; text-align:left; border-bottom:1px solid var(--border); }
+.weight-table th { font-size:11px; color:var(--text-muted); text-transform:uppercase; }
+.weight-table tr:hover { background:var(--bg-side); }
+.weight-bar { display:inline-block; height:6px; border-radius:3px; vertical-align:middle; margin-right:6px; }
+.risk-example { margin-top:16px; }
+.risk-example-tags { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.risk-example-tag { font-size:12px; padding:4px 10px; border-radius:14px; border:1px solid var(--border); cursor:pointer; user-select:none; transition:all .15s; }
+.risk-example-tag.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.risk-example-result { font-size:14px; padding:12px 16px; background:var(--bg-side); border-radius:var(--radius-sm); margin-top:10px; display:flex; align-items:center; gap:12px; }
+.risk-example-result .score { font-size:24px; font-weight:700; }
+
+@media (max-width:768px) {
+  .risk-config-grid { grid-template-columns:1fr; }
+}
+
 /* ===== Improved Responsive ===== */
 @media (max-width:768px) {
   .action-cards { grid-template-columns:1fr; }
@@ -301,4 +381,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
   .settings-grid { grid-template-columns:1fr; }
   .tabs { overflow-x:auto; }
   .stat-cards { grid-template-columns:repeat(2,1fr); }
+  .risk-cards { grid-template-columns:repeat(2,1fr); }
+  .summary-row { grid-template-columns:1fr; }
+  .stat-grid { grid-template-columns:1fr; }
+  .bar-label { width:44px; font-size:11px; }
 }

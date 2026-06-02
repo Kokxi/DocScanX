@@ -63,7 +63,34 @@
   <div class="stat-cards">
     <div class="stat-card" v-for="s in stats" :key="s.label" style="cursor:pointer" @click="currentTab = (s.label==='总任务'||s.label==='总文件') ? 'tasks' : 'persons'">
       <div class="stat-icon" :style="{background:s.bg}" v-html="s.icon"></div>
-      <div class="stat-body"><div class="stat-num">{{s.value}}</div><div class="stat-label">{{s.label}}</div></div>
+      <div class="stat-body">
+        <div class="stat-num">{{s.value}}</div>
+        <div class="stat-label">{{s.label}}</div>
+        <div v-if="s.trend" v-html="s.trend"></div>
+      </div>
+    </div>
+  </div>
+  <div class="stat-grid" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header-row"><h3>风险主体分布</h3><span class="card-tag card-tag-blue">全部任务汇总</span></div>
+      <div class="risk-cards">
+        <div v-for="r in dashboardRiskDist" :key="r.level" :class="'risk-card '+r.level">
+          <div class="rc-num">{{r.count}}</div>
+          <div class="rc-label">{{r.label}}</div>
+          <div class="rc-bar"><div :class="'rc-bar-fill '+r.level" :style="{width:r.pct+'%'}"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header-row"><h3>实体类型 TOP5</h3><span class="card-tag card-tag-green">所有报告</span></div>
+      <div class="bar-list">
+        <div v-for="e in entityTop5" :key="e.type" class="bar-row">
+          <span class="bar-label">{{e.label}}</span>
+          <div class="bar-track"><div class="bar-fill" :style="{width:e.pct+'%',background:e.color}"></div></div>
+          <span class="bar-count">{{e.count}}</span>
+        </div>
+      </div>
+      <div v-if="entityTop5.length===0" style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无数据</div>
     </div>
   </div>
   <div class="card">
@@ -105,6 +132,24 @@
         </div>
         <strong>文件服务器扫描</strong>
         <p>FTP 远程文件扫描</p>
+      </div>
+    </div>
+    <div class="stat-cards" style="margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#4f6ef7"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="stat-body"><div class="stat-num">{{taskStats.total}}</div><div class="stat-label">总任务</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#22c55e"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="stat-body"><div class="stat-num">{{taskStats.completed}}</div><div class="stat-label">已完成</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#ef4444"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+        <div class="stat-body"><div class="stat-num">{{taskStats.failed}}</div><div class="stat-label">失败</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f59e0b"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <div class="stat-body"><div class="stat-num">{{taskStats.persons}}</div><div class="stat-label">涉及主体</div></div>
       </div>
     </div>
     <div class="card">
@@ -179,20 +224,71 @@
         <span style="font-size:12px;color:var(--text-secondary)">{{Math.round(reportProgress)}}%</span>
       </div>
     </div>
-    <div class="report-grid">
-      <div class="card"><h3>风险等级分布</h3>
-        <div v-if="riskDistribution.length===0" style="color:var(--text-secondary);font-size:13px;padding:12px 0">暂无数据</div>
-        <div class="drawer-field" v-for="r in riskDistribution" :key="r.level" style="border:none"><span>{{r.label}}</span><span>{{r.pct}}% ({{r.count}}项)</span></div>
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-header-row"><h3>实体类型分布</h3><span class="card-tag card-tag-blue">本次任务</span></div>
+        <div class="bar-list">
+          <div v-for="e in entityDistribution" :key="e.type" class="bar-row">
+            <span class="bar-label">{{e.label}}</span>
+            <div class="bar-track"><div class="bar-fill" :style="{width:e.pct+'%',background:e.color}"></div></div>
+            <span class="bar-count">{{e.count}}</span>
+          </div>
+        </div>
+        <div v-if="entityDistribution.length===0" style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无数据</div>
       </div>
-      <div class="card"><h3>异常文件统计</h3>
-        <div class="drawer-field" v-for="af in anomalousFiles" :key="af.path" style="border:none;justify-content:space-between">
-          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;font-size:12px;color:var(--text-secondary)">{{af.path}}</span>
-          <span class="badge" :class="af.type==='解析失败'?'badge-fail':'badge-run'">{{af.type}}</span>
+      <div class="card">
+        <div class="card-header-row"><h3>处理耗时</h3><span class="card-tag card-tag-green">平均每文件</span></div>
+        <div v-if="processingDuration.stages.length===0" style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无数据</div>
+        <template v-else>
+          <div class="duration-bar">
+            <div v-for="s in processingDuration.stages" :key="s.name" class="duration-seg" :style="{width:s.pct+'%',background:s.color}" :title="s.label + ' ' + s.duration + 's'"></div>
+          </div>
+          <div class="duration-legend">
+            <span v-for="s in processingDuration.stages" :key="s.name">
+              <span class="dl-dot" :style="{background:s.color}"></span> {{s.label}} {{s.duration}}s
+            </span>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:var(--text-secondary);display:flex;gap:24px">
+            <div>总文件: <strong>{{processingDuration.fileCount}}</strong></div>
+            <div>平均耗时: <strong>{{processingDuration.totalAvg}}s</strong></div>
+            <div>最长文件: <strong>{{processingDuration.totalMax}}s</strong></div>
+          </div>
+        </template>
+      </div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-header-row"><h3>文件类型分布</h3></div>
+        <div class="bar-list">
+          <div v-for="ft in fileTypeDistribution" :key="ft.type" class="bar-row">
+            <span class="bar-label">{{ft.type}}</span>
+            <div class="bar-track"><div class="bar-fill" :style="{width:ft.pct+'%',background:ft.color}"></div></div>
+            <span class="bar-count">{{ft.count}}</span>
+          </div>
         </div>
-        <div v-if="anomalousFiles.length===0" style="color:var(--text-secondary);font-size:13px;padding:12px 0">没有异常文件</div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <button class="btn btn-outline btn-sm" @click="downloadAnomalousList">📥 导出异常清单</button>
+        <div v-if="fileTypeDistribution.length===0" style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无数据</div>
+      </div>
+      <div class="card">
+        <div class="card-header-row"><h3>风险等级分布</h3></div>
+        <div v-if="riskDistribution.length===0" style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无数据</div>
+        <div v-else class="bar-list">
+          <div v-for="r in riskDistribution" :key="r.level" class="bar-row">
+            <span class="bar-label">{{r.label}}</span>
+            <div class="bar-track"><div :class="'bar-fill'" :style="{width:Math.max(r.pct,5)+'%',background:r.level==='critical'?'#dc2626':r.level==='high'?'#f97316':r.level==='medium'?'#eab308':'#22c55e'}"></div></div>
+            <span class="bar-count">{{r.count}}</span>
+          </div>
         </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header-row"><h3>异常文件统计</h3></div>
+      <div class="drawer-field" v-for="af in anomalousFiles" :key="af.path" style="border:none;justify-content:space-between">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;font-size:12px;color:var(--text-secondary)">{{af.path}}</span>
+        <span class="badge" :class="af.type==='解析失败'?'badge-fail':'badge-run'">{{af.type}}</span>
+      </div>
+      <div v-if="anomalousFiles.length===0" style="color:var(--text-secondary);font-size:13px;padding:12px 0">没有异常文件</div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="btn btn-outline btn-sm" @click="downloadAnomalousList">📥 导出异常清单</button>
       </div>
     </div>
   </template>
@@ -352,7 +448,19 @@
   </div>
 </section>
 <section v-if="currentTab==='persons'" class="page">
-  <div class="page-header"><h2>数据主体</h2><p class="page-desc">已识别个人信息</p></div>
+  <div class="page-header"><h2>数据主体</h2><p class="page-desc">已识别个人信息 · 共 {{persons.length}} 人</p></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header-row"><h3>风险分布</h3><span style="font-size:12px;color:var(--text-secondary)">高/极高风险占比 <strong style="color:var(--danger)">{{highRiskRatio}}%</strong>（{{highRiskCount}} 人）</span></div>
+    <div class="risk-stacked-bar">
+      <template v-for="r in subjectRiskSummary" :key="r.level">
+        <div v-if="r.count>0" class="risk-stacked-seg" :class="{small:r.count/persons.length<0.12}"
+             :style="{width:(r.count/persons.length*100)+'%',background:r.color}">
+          {{r.label}} {{r.count}}
+        </div>
+      </template>
+    </div>
+    <div v-if="persons.length===0" style="color:var(--text-muted);font-size:13px;padding:12px 0;text-align:center">暂无数据</div>
+  </div>
   <div class="card">
     <div class="task-toolbar">
       <select v-model="personFilter.risk" class="input-sm"><option value="">全部风险</option><option>极高</option><option>高</option><option>中</option><option>低</option></select>
@@ -417,8 +525,12 @@
     </div>
   </div>
 </section><section v-if="currentTab==='settings'" class="page">
-  <div class="page-header"><h2>系统配置</h2><p class="page-desc">扫描参数与引擎配置</p></div>
-  <div class="settings-grid">
+  <template v-if="settingsView==='main'">
+    <div class="page-header row">
+      <div><h2>系统配置</h2><p class="page-desc">扫描参数与引擎配置</p></div>
+      <button class="btn btn-outline" @click="settingsView='risk'">风险评分规则</button>
+    </div>
+    <div class="settings-grid">
     <div class="card"><h3>扫描引擎</h3>
       <div class="setting-row"><label>并发线程数</label><input class="input-sm" type="number" v-model.number="settings.concurrency" min="1" max="16"></div>
       <div class="setting-row"><label>内存限制(MB)</label><input class="input-sm" type="number" v-model.number="settings.memory" min="512" max="16384" step="512"></div>
@@ -442,6 +554,58 @@
     </div>
   </div>
   <div class="flex-row"><button class="btn btn-outline" @click="resetSettings">恢复默认</button><button class="btn btn-primary" @click="saveSettings">保存配置</button></div>
+  </template>
+  <template v-if="settingsView==='risk'">
+    <div class="page-header row">
+      <div>
+        <button class="btn btn-ghost" style="padding:0;margin-bottom:4px" @click="settingsView='main'">&larr; 返回系统配置</button>
+        <h2>风险评分规则</h2>
+        <p class="page-desc">敏感信息加权评分逻辑与等级映射</p>
+      </div>
+    </div>
+    <div class="risk-config-grid">
+      <div class="card">
+        <div class="card-header-row"><h3>实体权重表</h3><span style="font-size:11px;color:var(--text-muted)">按累计分数评定风险等级</span></div>
+        <table class="weight-table">
+          <thead><tr><th>实体类型</th><th>权重</th><th>分布</th></tr></thead>
+          <tbody>
+            <tr v-for="w in riskWeights" :key="w.type">
+              <td><span :style="{color:w.color,fontWeight:600}">{{w.label}}</span></td>
+              <td style="font-weight:600">{{(w.weight*100).toFixed(0)}}%</td>
+              <td><span class="weight-bar" :style="{width:(w.weight/0.30*120)+'px',background:w.color}"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-header-row"><h3>等级阈值</h3><span style="font-size:11px;color:var(--text-muted)">累计分 ≥ 阈值判定</span></div>
+        <table class="weight-table">
+          <thead><tr><th>等级</th><th>条件</th><th>标识</th></tr></thead>
+          <tbody>
+            <tr v-for="t in [{min:0.70,label:'极高',level:'critical',color:'#dc2626'},{min:0.45,label:'高',level:'high',color:'#f97316'},{min:0.20,label:'中',level:'medium',color:'#eab308'},{min:0.00,label:'低',level:'low',color:'#22c55e'}]" :key="t.level">
+              <td><span :style="{color:t.color,fontWeight:600}">{{t.label}}风险</span></td>
+              <td>≥ {{(t.min*100).toFixed(0)}}%</td>
+              <td><span :class="'risk-tag risk-'+t.level">{{t.label}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card risk-example" style="margin-top:16px">
+      <div class="card-header-row"><h3>评分试算</h3><span style="font-size:11px;color:var(--text-muted)">点击选择实体类型，查看累计评分与等级</span></div>
+      <div class="risk-example-tags">
+        <span v-for="w in riskWeights" :key="w.type" :class="['risk-example-tag',{active:riskExampleSelected[w.type]}]"
+              @click="riskExampleSelected[w.type]=!riskExampleSelected[w.type]">
+          {{w.label}} {{(w.weight*100).toFixed(0)}}%
+        </span>
+      </div>
+      <div class="risk-example-result">
+        <span class="score" :style="{color:riskExampleLevel.color}">{{(riskExampleScore*100).toFixed(0)}}%</span>
+        <span :class="'risk-tag risk-'+riskExampleLevel.level" style="font-size:14px;padding:3px 10px">{{riskExampleLevel.label}}风险</span>
+        <span style="font-size:12px;color:var(--text-muted)">= {{riskWeights.filter(function(w){return riskExampleSelected[w.type]}).map(function(w){return w.label}).join(' + ') || '未选择'}}</span>
+      </div>
+    </div>
+  </template>
 </section>
 <section v-if="currentTab==='logs'" class="page">
   <div class="page-header"><h2>系统日志</h2><p class="page-desc">操作记录与追踪</p></div>
