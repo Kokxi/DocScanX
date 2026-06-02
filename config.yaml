@@ -26,13 +26,10 @@ scan:
 
 model:
   uie:
-    version: small
-    path: ./models/uie-small
+    version: mini
     schema: [name, id_card, phone, bank_card, address, email, wechat, birthday, job_no, plate_no, passport, gender]
   ocr:
     engine: rapidocr
-    rapidocr_path: ./models/ocr_rapidocr
-    paddleocr_path: ./models/ocr_paddle_v4_light
 
 inference:
   confidence_threshold: 0.65
@@ -91,3 +88,6 @@ path:
   temp_dir: ./temp
   model_dir: ./models
   log_dir: ./logs
+  ocr_onnx: ./models/ocr
+  uie_paddle: ./models/uie/paddle
+  uie_torch: ./models/uie/pytorch

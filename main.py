@@ -5,6 +5,7 @@ import sys
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from jinja2 import Environment, FileSystemLoader
 
 from app.api.router import api_router
 from app.core.config import init_config
@@ -15,18 +16,26 @@ def create_app() -> FastAPI:
     """创建 FastAPI 应用。"""
     app = FastAPI(title="DocScanX", version="1.0.0", docs_url=None, redoc_url=None)
 
+    base_dir = os.path.dirname(__file__)
+
+    # Jinja2 模板引擎
+    templates = Environment(
+        loader=FileSystemLoader(os.path.join(base_dir, "app", "web", "templates")),
+        autoescape=True,
+    )
+    app.state.templates = templates
+
     # 注册 API 路由
     app.include_router(api_router)
 
-    # 挂载前端静态文件
-    frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
-    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+    # 注册 Web 前端路由
+    from app.web.views import router as web_router
+    app.include_router(web_router)
 
-    @app.get("/")
-    async def index():
-        """返回首页。"""
-        from fastapi.responses import FileResponse
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
+    # 挂载静态文件
+    static_dir = os.path.join(base_dir, "app", "web", "static")
+    if os.path.isdir(static_dir):
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     return app
 
@@ -54,7 +63,15 @@ def main():
 
     # 4. 启动
     system_log.info(f"DocScanX 启动中... 访问 http://localhost:8080")
-    uvicorn.run(create_app(), host="0.0.0.0", port=8080, log_level="info")
+
+    # 统一 uvicorn 日志格式
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["formatters"]["default"]["fmt"] = "[%(asctime)s] [%(levelname)s] [uvicorn] %(message)s"
+    log_config["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+    log_config["formatters"]["access"]["fmt"] = '[%(asctime)s] [%(levelname)s] [uvicorn] %(client_addr)s - "%(request_line)s" %(status_code)s'
+    log_config["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+
+    uvicorn.run(create_app(), host="0.0.0.0", port=8080, log_level="info", log_config=log_config)
 
 
 if __name__ == "__main__":

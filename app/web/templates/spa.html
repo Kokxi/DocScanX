@@ -1,0 +1,494 @@
+{% raw %}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DocScanX</title>
+<script src="/static/js/vue.global.prod.js"></script>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div id="app">
+<div class="toast-container">
+  <div v-for="t in toasts" :key="t.id" :class="['toast','toast-'+t.type]" @click="removeToast(t.id)">
+    <span class="toast-msg">{{t.msg}}</span>
+    <button class="toast-close" @click.stop="removeToast(t.id)">&times;</button>
+  </div>
+</div>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo" @click="currentTab='dashboard'">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+      <span>DocScanX</span>
+      <span class="topbar-module">{{moduleName}}</span>
+    </div>
+    <nav class="tabs">
+      <a v-for="tab in tabs" :key="tab.id" :class="['tab',{active:currentTab===tab.id}]" @click="currentTab=tab.id">
+        <span v-html="tab.icon"></span>
+        <span class="tab-label">{{tab.label}}</span>
+      </a>
+    </nav>
+    <div class="topbar-right">
+      <span class="status-dot" :class="modelReady?'online':'offline'"></span>
+      <span>{{modelReady?'模型就绪':'模型缺失'}}</span>
+    </div>
+  </div>
+</header>
+<main class="main-area">
+<!-- Dashboard -->
+<section v-if="currentTab==='dashboard'" class="page">
+  <div class="page-header"><h2>工作台</h2><p class="page-desc">概览与快捷操作</p></div>
+  <div class="quick-scan-bar">
+    <div class="qsb-icon" style="background:#4f6ef7">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="qsb-info"><strong>快捷扫描</strong><p>拖拽或选择文件快速识别敏感信息</p></div>
+    <div class="quick-scan-zone">
+      <input type="file" id="quickScanInput" @change="quickScanFile" style="display:none" accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt,.jpg,.jpeg,.png,.bmp,.tiff,.txt,.csv,.json,.xml,.zip,.rar,.7z">
+      <button class="btn btn-primary" :disabled="quickScanLoading" onclick="document.getElementById('quickScanInput').click();return false" type="button">{{quickScanLoading?'扫描中...':'选择文件'}}</button>
+      <span class="btn-text" style="cursor:default">选择本地文件快速扫描</span>
+    </div>
+  </div>
+  <div v-if="quickScanResult" class="quick-scan-result">
+    <div class="qsr-header"><span>扫描完成</span><button class="btn-text" @click="quickScanResult=null">关闭</button></div>
+    <div class="qsr-file">{{quickScanResult.file}}</div>
+    <div class="qsr-items">
+      <div class="qsr-item" v-for="item in quickScanResult.items" :key="item.type">
+        <span class="qsr-type">{{entityLabel(item.type)}}</span>
+        <span class="qsr-val">{{item.val}}</span>
+        <span class="qsr-conf">{{item.conf}}</span>
+      </div>
+    </div>
+  </div>
+  <div class="stat-cards">
+    <div class="stat-card" v-for="s in stats" :key="s.label" style="cursor:pointer" @click="currentTab = (s.label==='总任务'||s.label==='总文件') ? 'tasks' : 'persons'">
+      <div class="stat-icon" :style="{background:s.bg}" v-html="s.icon"></div>
+      <div class="stat-body"><div class="stat-num">{{s.value}}</div><div class="stat-label">{{s.label}}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header-row"><h3>最近24小时任务</h3><a class="link-more" @click="currentTab='tasks'">查看全部</a></div>
+    <table class="mini-table">
+      <tr v-for="task in recentTasks" :key="task.name" @click="currentTab='tasks';selectedReportTask=task.name;taskView='report'">
+        <td class="mini-name">{{task.name}}</td>
+        <td class="mini-count">{{task.files}}文件</td>
+        <td><span :class="['badge',task.status==='已完成'?'badge-done':'badge-fail']">{{task.status}}</span></td>
+        <td class="mini-time">{{task.time}}</td>
+      </tr>
+    </table>
+  </div>
+</section>
+<section v-if="currentTab==='tasks'" class="page">
+  <div class="page-header row">
+    <div><h2>扫描任务</h2><p class="page-desc">管理扫描任务</p></div>
+    <button class="btn btn-primary" @click="openWizard('file')">+新建任务</button>
+  </div>
+  <template v-if="taskView==='list'">
+    <div class="action-cards">
+      <div class="action-card" @click="openWizard('file')">
+        <div class="ac-icon" style="background:#4f6ef7">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <strong>单文件扫描</strong>
+        <p>选择一个文件进行扫描</p>
+      </div>
+      <div class="action-card" @click="openWizard('dir')">
+        <div class="ac-icon" style="background:#22c55e">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <strong>文件夹扫描</strong>
+        <p>扫描整个文件夹</p>
+      </div>
+      <div class="action-card" @click="openWizard('remote')">
+        <div class="ac-icon" style="background:#8b5cf6">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        </div>
+        <strong>文件服务器扫描</strong>
+        <p>FTP 远程文件扫描</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="task-toolbar">
+        <div class="filter-group">
+          <select v-model="taskFilter.status" class="input-sm"><option value="">全部</option><option>已完成</option><option>运行中</option><option>失败</option></select>
+          <input class="input-sm" placeholder="搜索..." v-model="taskFilter.search">
+        </div>
+      </div>
+      <table class="data-table">
+        <head><tr><th>任务名称</th><th>类型</th><th>文件</th><th>主体</th><th>进度</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr v-for="task in filteredTasks" :key="task.name">
+            <td class="cell-name">{{task.name}}</td>
+            <td><span class="badge badge-run">{{task.type}}</span></td>
+            <td>{{task.files}}</td>
+            <td>{{task.persons}}人</td>
+            <td>
+              <div class="task-progress">
+                <div class="progress-bar"><div class="progress-fill" :style="{width:task.progress+'%'}"></div></div>
+                <span style="font-size:11px;color:var(--text-secondary)">{{task.progress}}%</span>
+              </div>
+            </td>
+            <td><span :class="['badge',task.status==='已完成'?'badge-done':task.status==='失败'?'badge-fail':'badge-run']">{{task.status}}</span></td>
+            <td>
+              <button class="btn-detail" @click.stop="viewReport(task)">报告</button>
+              <button class="btn-detail" @click.stop="viewFileDetail(task)">详情</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </template>
+  <template v-if="taskView==='report'">
+    <div class="page-header row">
+      <div>
+        <button class="btn btn-ghost" style="padding:0;margin-bottom:4px" @click="backToTaskList">&larr; 返回任务列表</button>
+        <h2>扫描报告</h2>
+        <p class="page-desc">任务扫描结果</p>
+      </div>
+      <select class="input" v-model="selectedReportTask" style="max-width:240px">
+        <option v-for="t in allTasks" :key="t.id" :value="t.id">{{t.name}}</option>
+      </select>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card" v-for="s in reportStats" :key="s.label">
+        <div class="stat-icon" :style="{background:s.bg}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="stat-body"><div class="stat-num">{{s.value}}</div><div class="stat-label">{{s.label}}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header-row"><h3>文件扫描结果</h3><div class="export-btns">
+        <button class="btn btn-outline btn-sm" @click="exportReport('json')">导出JSON</button>
+        <button class="btn btn-outline btn-sm" @click="exportReport('xlsx')">导出Excel</button>
+      </div></div>
+      <div class="report-table-wrap">
+        <div class="file-result-row" v-for="fd in taskFileDetails" :key="fd.file">
+          <span class="fr-status">
+            <span :class="['status-dot',fd.status==='成功'?'online':'offline']"></span>
+          </span>
+          <span class="fr-name" :title="fd.file">{{fileBasename(fd.file)}}</span>
+          <span class="fr-person">{{fd.persons}}人</span>
+          <span class="fr-count">
+            <span v-for="(item,j) in fd.items" :key="j" class="qsr-type" style="margin-right:4px">{{entityLabel(item.type)}}:{{item.count}}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="card" v-if="reportProgress!==null && reportProgress<100">
+      <div class="flex-row"><span>扫描进度</span>
+        <div class="progress-bar" style="flex:1;max-width:400px"><div class="progress-fill" :style="{width:reportProgress+'%'}"></div></div>
+        <span style="font-size:12px;color:var(--text-secondary)">{{Math.round(reportProgress)}}%</span>
+      </div>
+    </div>
+    <div class="report-grid">
+      <div class="card"><h3>风险等级分布</h3>
+        <div v-if="riskDistribution.length===0" style="color:var(--text-secondary);font-size:13px;padding:12px 0">暂无数据</div>
+        <div class="drawer-field" v-for="r in riskDistribution" :key="r.level" style="border:none"><span>{{r.label}}</span><span>{{r.pct}}% ({{r.count}}项)</span></div>
+      </div>
+      <div class="card"><h3>异常文件统计</h3>
+        <div class="drawer-field" v-for="af in anomalousFiles" :key="af.path" style="border:none;justify-content:space-between">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;font-size:12px;color:var(--text-secondary)">{{af.path}}</span>
+          <span class="badge" :class="af.type==='解析失败'?'badge-fail':'badge-run'">{{af.type}}</span>
+        </div>
+        <div v-if="anomalousFiles.length===0" style="color:var(--text-secondary);font-size:13px;padding:12px 0">没有异常文件</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <button class="btn btn-outline btn-sm" @click="downloadAnomalousList">📥 导出异常清单</button>
+        </div>
+      </div>
+    </div>
+  </template>
+  <div v-if="selectedTaskFile" class="drawer-overlay" @click.self="selectedTaskFile=null">
+    <div class="drawer-panel">
+      <div class="drawer-header"><h3>任务详情: {{selectedTaskFile.name}}</h3><button class="btn-close" @click="selectedTaskFile=null">&times;</button></div>
+      <div class="drawer-body">
+        <div class="drawer-section">
+          <h4> 摘要</h4>
+          <div class="drawer-field"><span class="df-label">总文件</span><span class="df-value">{{selectedTaskFile.files}}</span></div>
+          <div class="drawer-field"><span class="df-label">涉及主体</span><span class="df-value">{{selectedTaskFile.persons}}人</span></div>
+          <div class="drawer-field"><span class="df-label">敏感字段总计</span><span class="df-value">{{taskSensitiveTotal}}项</span></div>
+        </div>
+        <div style="margin-top:8px"><button class="link-more" @click="viewReport(selectedTaskFile)">查看完整报告 →</button></div>
+        <div class="drawer-section"><h4> 文件扫描结果</h4>
+          <div v-for="fd in taskFileDetails" :key="fd.file" class="file-result-row">
+            <span class="fr-status">
+              <span :class="['status-dot',fd.status==='成功'?'online':'offline']"></span>
+            </span>
+            <span class="fr-name">{{fd.file}}</span>
+            <span class="fr-count">{{fd.items.length}}项敏感字段</span>
+            <span class="fr-person">{{fd.persons}}人</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div v-if="showWizard" class="modal-overlay" @click.self="showWizard=false">
+    <div class="modal-panel">
+      <div class="modal-header"><h3>新建扫描任务</h3><button class="btn-close" @click="showWizard=false">&times;</button></div>
+      <div v-if="wizardData.type==='file'" class="wizard-steps">
+        <div class="wstep" :class="{active:wizardStep===1, done:wizardStep>1}"><span class="wstep-num">1</span><span class="wstep-label">选择文件</span></div>
+        <div class="wstep-line" :class="{done:wizardStep>1}"></div>
+        <div class="wstep" :class="{active:wizardStep===3, done:wizardStep>3}"><span class="wstep-num">2</span><span class="wstep-label">扫描参数</span></div>
+      </div>
+      <div v-else class="wizard-steps">
+        <div class="wstep" :class="{active:wizardStep===1, done:wizardStep>1}"><span class="wstep-num">1</span><span class="wstep-label">基本信息</span></div>
+        <div class="wstep-line" :class="{done:wizardStep>1}"></div>
+        <div class="wstep" :class="{active:wizardStep===2, done:wizardStep>2}"><span class="wstep-num">2</span><span class="wstep-label">文件筛选</span></div>
+        <div class="wstep-line" :class="{done:wizardStep>2}"></div>
+        <div class="wstep" :class="{active:wizardStep===3, done:wizardStep>3}"><span class="wstep-num">3</span><span class="wstep-label">扫描参数</span></div>
+      </div>
+      <div class="modal-body">
+        <div v-if="wizardStep===1">
+          <div class="form-group"><label>任务名称</label><input class="input" v-model="wizardData.name" placeholder="输入任务名称（选填）"></div>
+          <!-- 目录扫描：路径输入 + 文件夹选择器 -->
+          <div v-if="wizardData.type==='dir'" class="form-group">
+            <label>目标路径</label>
+            <div class="input-row">
+              <input class="input" v-model="wizardData.path" placeholder="输入或选择文件夹路径，如 D:/HR/Docs/">
+              <button class="btn btn-outline" @click="browseFolder" type="button">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                浏览
+              </button>
+            </div>
+          </div>
+          <!-- 远程服务器：连接信息 -->
+          <template v-if="wizardData.type==='remote'">
+            <div class="form-row">
+              <div class="form-group" style="flex:2">
+                <label>服务器地址</label>
+                <input class="input" v-model="wizardData.remote.host" placeholder="如 192.168.1.100">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>端口</label>
+                <input class="input" type="number" v-model.number="wizardData.remote.port" placeholder="21">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="flex:1">
+                <label>用户名</label>
+                <input class="input" v-model="wizardData.remote.username" placeholder="anonymous">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>密码</label>
+                <input class="input" type="password" v-model="wizardData.remote.password" placeholder="FTP 密码">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>远程路径</label>
+              <input class="input" v-model="wizardData.remote.base_path" placeholder="如 /home/docs/ 或 /">
+            </div>
+            <div class="form-group">
+              <button class="btn btn-outline" @click="testRemoteConnection" :disabled="remoteTesting" type="button">
+                <span v-if="remoteTesting" style="display:inline-flex;align-items:center;gap:4px">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4"/></svg>
+                  测试中...
+                </span>
+                <span v-else>🔗 测试连接</span>
+              </button>
+              <span v-if="wizardData.remoteTestResult" :class="wizardData.remoteTestResult.success ? 'test-ok' : 'test-fail'" style="margin-left:10px;font-size:13px">{{wizardData.remoteTestResult.msg}}</span>
+            </div>
+          </template>
+          <!-- 单文件扫描：上传 -->
+          <div v-if="wizardData.type==='file'" class="form-group">
+            <label>选择文件</label>
+            <div class="file-upload-zone" @click="document.getElementById('wizFileInput').click()" @dragover.prevent @drop.prevent="$event.target.files && onFileSelected({target:$event.dataTransfer})">
+              <input type="file" id="wizFileInput" @change="onFileSelected" style="display:none" accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt,.jpg,.jpeg,.png,.bmp,.tiff,.txt,.csv,.json,.xml,.zip,.rar,.7z">
+              <div v-if="!wizardData.uploadName" class="upload-placeholder">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <span>点击选择文件或拖拽到此处</span>
+                <span style="font-size:11px;color:var(--text-muted);margin-top:2px">支持 PDF / Office / 图片 / 文本 / 压缩包</span>
+              </div>
+              <div v-else class="upload-selected">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--success)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>{{wizardData.uploadName}}</span>
+                <span style="font-size:11px;color:var(--text-secondary)">{{wizardData.uploadSize}} MB</span>
+                <button class="btn-text" @click.stop="wizardData.uploadName='';wizardData.uploadSize=0;wizardData.path=''" type="button">移除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="wizardStep===2">
+          <div class="form-group"><label>文件类型</label>
+            <div class="file-type-categories">
+              <div v-for="(cat, catKey) in wizardData.fileTypes" :key="catKey" class="file-type-cat">
+                <label class="checkbox-label cat-header">
+                  <input type="checkbox" v-model="cat.checked"> <strong>{{cat.label}}</strong>
+                  <span class="cat-hint">（{{Object.values(cat.exts).filter(Boolean).length}} 种扩展名）</span>
+                </label>
+                <div v-if="cat.checked" class="ftags">
+                  <label v-for="(enabled, ext) in cat.exts" :key="ext" class="ftag" :class="{active:enabled}">
+                    <input type="checkbox" v-model="cat.exts[ext]"> .{{ext}}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group"><label class="checkbox-label"><input type="checkbox" v-model="wizardData.subdir"> 包含子目录</label></div>
+          <div class="form-group"><label class="checkbox-label"><input type="checkbox" v-model="wizardData.unzip"> 自动解压压缩包</label></div>
+        </div>
+        <div v-if="wizardStep===3">
+          <div class="form-group"><label>脱敏处理</label>
+            <div class="toggle-group">
+              <button :class="['btn-toggle',{active:wizardData.mask}]" @click="wizardData.mask=true">开启</button>
+              <button :class="['btn-toggle',{active:!wizardData.mask}]" @click="wizardData.mask=false">关闭</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:6px">开启后敏感字段将自动替换为 *** 占位符</p>
+          </div>
+          <div class="form-group"><label>置信度阈值：{{wizardData.threshold}}</label>
+            <input type="range" min="0.3" max="1" step="0.05" v-model.number="wizardData.threshold" style="width:100%">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px">
+              <span>0.3 宽松</span><span>0.65 标准</span><span>1.0 严格</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="showWizard=false">取消</button>
+        <div class="footer-actions">
+          <button v-if="wizardStep>1" class="btn btn-outline" @click="wizardPrev()">上一步</button>
+          <button v-if="(wizardData.type==='file' && wizardStep===1) || (wizardData.type!=='file' && wizardStep<3)" class="btn btn-primary" @click="wizardNext()">下一步</button>
+          <button v-if="wizardStep===3" class="btn btn-primary" @click="startTask">开始扫描</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section v-if="currentTab==='persons'" class="page">
+  <div class="page-header"><h2>数据主体</h2><p class="page-desc">已识别个人信息</p></div>
+  <div class="card">
+    <div class="task-toolbar">
+      <select v-model="personFilter.risk" class="input-sm"><option value="">全部风险</option><option>极高</option><option>高</option><option>中</option><option>低</option></select>
+      <input class="input-sm" placeholder="搜索..." v-model="personFilter.search">
+    </div>
+    <table class="data-table">
+      <head><tr><th>#</th><th>姓名</th><th>身份证</th><th>手机</th><th>风险</th><th>置信度</th><th>来源文件</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr v-for="(p,i) in filteredPersons" :key="i">
+          <td>{{i+1}}</td>
+          <td class="cell-name">{{p.name}}</td>
+          <td class="cell-id">{{p.id||'-'}}</td>
+          <td class="cell-phone">{{p.phone||'-'}}</td>
+          <td><span :class="['risk-tag','risk-'+p.riskLevel]">{{p.risk}}</span></td>
+          <td>{{p.confidence}}</td>
+          <td>{{p.files}}个</td>
+          <td>
+            <button class="btn-detail" @click.stop="showPersonDetail(p)">详情</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div v-if="personTotal > personPerPage" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;border-top:1px solid var(--border);margin-top:12px">
+      <button class="btn btn-outline btn-sm" :disabled="personPage<=1" @click="loadPersons(personPage-1)">上一页</button>
+      <span style="font-size:13px;color:var(--text-secondary)">第 {{personPage}} 页 / 共 {{Math.ceil(personTotal/personPerPage)}} 页 ({{personTotal}} 条)</span>
+      <button class="btn btn-outline btn-sm" :disabled="personPage*personPerPage >= personTotal" @click="loadPersons(personPage+1)">下一页</button>
+    </div>
+  </div>
+  <div v-if="selectedPerson" class="drawer-overlay" @click.self="closePersonDetail">
+    <div class="drawer-panel">
+      <div class="drawer-header"><h3>主体详情</h3><button class="btn-close" @click="closePersonDetail">&times;</button></div>
+      <div class="drawer-body">
+        <div class="drawer-section"><h4> 基本信息</h4>
+          <div class="drawer-field"><span class="df-label">姓名</span><span class="df-value">{{selectedPerson.name}}</span></div>
+          <div class="drawer-field"><span class="df-label">身份证</span><span class="df-value">{{selectedPerson.id||'未识别'}}</span></div>
+          <div class="drawer-field"><span class="df-label">手机</span><span class="df-value">{{selectedPerson.phone||'未识别'}}</span></div>
+          <div class="drawer-field"><span class="df-label">地址</span><span class="df-value">{{selectedPerson.address||'未识别'}}</span></div>
+          <div class="drawer-field"><span class="df-label">风险等级</span><span class="df-value"><span :class="['risk-tag','risk-'+selectedPerson.riskLevel]">{{selectedPerson.risk}}</span></span></div>
+          <div class="drawer-field"><span class="df-label">置信度</span><span class="df-value">{{selectedPerson.confidence}}</span></div>
+        </div>
+        <div class="drawer-section"><h4> 敏感字段 ({{personSensitiveFields.length}}项)</h4>
+          <div v-for="(item,i) in personSensitiveFields" :key="i" class="drawer-field">
+            <span class="df-label">{{item.field}}</span>
+            <span class="df-value">{{item.count}}次出现</span>
+          </div>
+        </div>
+        <div class="drawer-section"><h4> 关联文件 ({{personRelatedFiles.length}}个)</h4>
+          <div v-if="personRelatedLoading" style="color:var(--text-muted);font-size:12px;padding:8px 0">加载中...</div>
+          <div v-else-if="personRelatedFiles.length===0" style="color:var(--text-muted);font-size:12px;padding:8px 0">暂无关联文件</div>
+          <div v-else class="file-tree">
+            <div class="ft-item" v-for="(file,i) in personRelatedFiles" :key="i">
+              <span class="ft-icon" v-html="file.isDir ? folderSvg : fileSvg"></span>
+              <div class="ft-info">
+                <span class="ft-path">{{fileBasename(file.path)}}</span>
+                <span class="ft-report">{{file.report}}</span>
+              </div>
+              <span class="ft-count">{{file.fields}}项</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section><section v-if="currentTab==='settings'" class="page">
+  <div class="page-header"><h2>系统配置</h2><p class="page-desc">扫描参数与引擎配置</p></div>
+  <div class="settings-grid">
+    <div class="card"><h3>扫描引擎</h3>
+      <div class="setting-row"><label>并发线程数</label><input class="input-sm" type="number" v-model.number="settings.concurrency" min="1" max="16"></div>
+      <div class="setting-row"><label>内存限制(MB)</label><input class="input-sm" type="number" v-model.number="settings.memory" min="512" max="16384" step="512"></div>
+      <div class="setting-row"><label>模型路径</label><input class="input-sm" style="width:200px" v-model="settings.modelPath"></div>
+      <div class="setting-row"><label>OCR引擎</label><select class="input-sm" v-model="settings.ocr"><option>RapidOCR</option><option>PaddleOCR</option></select></div>
+    </div>
+    <div class="card"><h3>扫描参数</h3>
+      <div class="setting-row"><label>脱敏处理</label>
+        <div class="toggle-group">
+          <button :class="['btn-toggle',{active:settings.mask}]" @click="settings.mask=true">开启</button>
+          <button :class="['btn-toggle',{active:!settings.mask}]" @click="settings.mask=false">关闭</button>
+        </div>
+      </div>
+      <div class="setting-row"><label>置信度阈值</label><input type="range" min="0.3" max="1" step="0.05" v-model.number="settings.threshold" class="slider" style="width:120px"></div>
+      <div class="setting-row"><label>日志级别</label><select class="input-sm" v-model="settings.logLevel"><option>INFO</option><option>DEBUG</option><option>ERROR</option></select></div>
+    </div>
+    <div class="card"><h3>文件处理</h3>
+      <div class="setting-row"><label>最大文件大小(MB)</label><input class="input-sm" type="number" v-model.number="settings.maxFileSize" value="50"></div>
+      <div class="setting-row"><label>超时时间(秒)</label><input class="input-sm" type="number" v-model.number="settings.timeout" value="300"></div>
+      <div class="setting-row"><label>临时目录</label><input class="input-sm" style="width:200px" v-model="settings.tempDir" value="/tmp/docscanx"></div>
+    </div>
+  </div>
+  <div class="flex-row"><button class="btn btn-outline" @click="resetSettings">恢复默认</button><button class="btn btn-primary" @click="saveSettings">保存配置</button></div>
+</section>
+<section v-if="currentTab==='logs'" class="page">
+  <div class="page-header"><h2>系统日志</h2><p class="page-desc">操作记录与追踪</p></div>
+  <div class="card">
+    <div class="log-toolbar">
+      <div class="filter-group">
+        <select v-model="logFilter.level" class="input-sm"><option value="">全部级别</option><option>INFO</option><option>ERROR</option></select>
+        <input class="input-sm" placeholder="搜索..." v-model="logFilter.search">
+      </div>
+      <div class="log-tabs">
+        <button :class="['log-tab',{active:logView==='audit'}]" @click="logView='audit'">审计日志</button>
+        <button :class="['log-tab',{active:logView==='trace'}]" @click="logView='trace'">文件轨迹</button>
+      </div>
+    </div>
+    <table v-if="logView==='audit'" class="data-table">
+      <head><tr><th>时间</th><th>操作</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr v-for="log in filteredAuditLogs" :key="log.time">
+          <td class="cell-time">{{log.time}}</td>
+          <td>{{log.action}}</td>
+          <td><span :class="['badge',log.result==='成功'?'badge-done':'badge-fail']">{{log.result}}</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div v-if="logView==='trace'">
+      <div style="margin-bottom:12px">
+        <select class="input-sm" v-model="traceReportId" style="min-width:240px">
+          <option value="">-- 选择报告 --</option>
+          <option v-for="t in allTasks" :key="t.id" :value="t.id">{{t.name}}</option>
+        </select>
+      </div>
+      <table class="data-table">
+        <head><tr><th>文件</th><th>阶段</th><th>状态</th><th>字段</th></tr></thead>
+        <tbody>
+          <tr v-for="trace in fileTraces" :key="trace.path">
+            <td class="cell-path">{{trace.path}}</td>
+            <td>{{trace.stage}}</td>
+            <td><span :class="['badge',trace.status==='成功'?'badge-done':trace.status==='失败'?'badge-fail':'badge-run']">{{trace.status}}</span></td>
+            <td>{{trace.fields}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+<script src="/static/js/app.js"></script>
+</body>
+</html>{% endraw %}

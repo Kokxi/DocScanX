@@ -10,6 +10,7 @@ temp/*
 !temp/.gitkeep
 models/*
 !models/.gitkeep
+!models/README.md
 *.egg-info/
 dist/
 build/

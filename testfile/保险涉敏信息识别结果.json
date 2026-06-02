@@ -1,0 +1,45 @@
+{
+  "global_stats": {
+    "total_files": 1,
+    "sensitive_files": 1,
+    "global_unique_persons": 1,
+    "non_sensitive_files": 0,
+    "life_sensitive_files": 0,
+    "life_unique_persons": 0,
+    "property_files": 1,
+    "property_sensitive_persons": 1,
+    "anomaly_files": 0
+  },
+  "details": [
+    {
+      "filename": "微信图片_20260529140224_388_251.png",
+      "is_insurance_related": true,
+      "document_type": "policy",
+      "document_type_display": "保单",
+      "insurance_category": "car",
+      "insurance_category_display": "车险",
+      "insurance_branch": "property",
+      "insurance_branch_display": "财产保险",
+      "anomaly": "",
+      "insurance_company": "太平洋保险",
+      "policy_number": "",
+      "status": "ok",
+      "sensitive_count": 1,
+      "persons": [
+        {
+          "name": "",
+          "role": "anonymous",
+          "role_display": "未关联",
+          "details": [
+            {
+              "type": "id_number",
+              "value": "321284198203193624",
+              "raw_label": "身份证号"
+            }
+          ]
+        }
+      ],
+      "error_message": null
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+<html><head><meta charset="utf-8"><title>扫描报告 - 测试扫描</title>
+<style>body{font-family:sans-serif;padding:20px;max-width:1200px;margin:auto}
+h1{color:#1a1d29}h2{color:#4f6ef7;border-bottom:2px solid #eef0f4;padding-bottom:8px}
+table{width:100%;border-collapse:collapse;margin:16px 0}
+th,td{padding:10px 14px;text-align:left;border:1px solid #eef0f4}
+th{background:#f5f6fa;font-weight:600}
+.critical{color:#e74c3c;font-weight:700}.high{color:#e67e22}.medium{color:#f39c12}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.summary div{background:#f5f6fa;padding:20px;border-radius:12px;text-align:center}
+.summary div strong{font-size:28px;display:block;color:#4f6ef7}
+</style></head><body>
+<h1>敏感数据扫描报告</h1>
+<div class="summary"><div><strong>1</strong>扫描文件数</div>
+<div><strong>54</strong>发现总数</div><div><strong>54</strong>高危项</div>
+<div><strong>2</strong>敏感类型</div></div>
+<h2>分级统计</h2><table><tr><th>级别</th><th>数量</th></tr>
+<tr><td>FINANCIAL</td><td>4</td></tr><tr><td>PII</td><td>23</td></tr></table>
+<h2>发现明细</h2><table><tr><th>文件名</th><th>规则</th><th>匹配值</th><th>严重度</th><th>位置</th></tr>
+<tr><td>01_pii.txt</td><td>台湾通行证</td><td>13800138</td>
+<td class="high">high</td><td>L5</td></tr><tr><td>01_pii.txt</td><td>对公账号</td><td>13800138000</td>
+<td class="high">high</td><td>L5</td></tr><tr><td>01_pii.txt</td><td>手机号</td><td>13800138000</td>
+<td class="high">high</td><td>L5</td></tr><tr><td>01_pii.txt</td><td>邮箱地址</td><td>test@example.com</td>
+<td class="medium">medium</td><td>L5</td></tr><tr><td>01_pii.txt</td><td>台湾通行证</td><td>11010119</td>
+<td class="high">high</td><td>L6</td></tr><tr><td>01_pii.txt</td><td>手机号</td><td>19900307123</td>
+<td class="high">high</td><td>L6</td></tr><tr><td>01_pii.txt</td><td>纳税人识别号</td><td>110101199003071234</td>
+<td class="medium">medium</td><td>L6</td></tr><tr><td>01_pii.txt</td><td>台湾通行证</td><td>12345678</td>
+<td class="high">high</td><td>L7</td></tr><tr><td>01_pii.txt</td><td>护照号</td><td>E12345678</td>
+<td class="high">high</td><td>L7</td></tr><tr><td>01_pii.txt</td><td>台湾通行证</td><td>12345678</td>
+<td class="high">high</td><td>L8</td></tr><tr><td>01_pii.txt</td><td>港澳通行证</td><td>H12345678</td>
+<td class="high">high</td><td>L8</td></tr><tr><td>01_pii.txt</td><td>台湾通行证</td><td>12345678</td>
+<td class="high">high</td><td>L9</td></tr><tr><td>01_pii.txt</td><td>IP地址</td><td>192.168.1.1</td>
+<td class="medium">medium</td><td>L10</td></tr><tr><td>01_pii.txt</td><td>MAC地址</td><td>00:1A:2B:3C:4D:5E</td>
+<td class="low">low</td><td>L11</td></tr><tr><td>01_pii.txt</td><td>台湾通行证</td><td>12345678</td>
+<td class="high">high</td><td>L12</td></tr><tr><td>01_pii.txt</td><td>纳税人识别号</td><td>123456789012345</td>
+<td class="medium">medium</td><td>L12</td></tr><tr><td>01_pii.txt</td><td>IMEI</td><td>123456789012345</td>
+<td class="medium">medium</td><td>L12</td></tr><tr><td>01_pii.txt</td><td>台湾通行证</td><td>46012345</td>
+<td class="high">high</td><td>L13</td></tr><tr><td>01_pii.txt</td><td>IMSI</td><td>46012345678901</td>
+<td class="medium">medium</td><td>L13</td></tr><tr><td>01_pii.txt</td><td>纳税人识别号</td><td>460123456789012</td>
+<td class="medium">medium</td><td>L13</td></tr><tr><td>01_pii.txt</td><td>IMEI</td><td>460123456789012</td>
+<td class="medium">medium</td><td>L13</td></tr><tr><td>01_pii.txt</td><td>微信号</td><td>微信号: wxid_abc123def456</td>
+<td class="medium">medium</td><td>L14</td></tr><tr><td>01_pii.txt</td><td>出生日期</td><td>1990-03-07</td>
+<td class="medium">medium</td><td>L16</td></tr><tr><td>01_pii.txt</td><td>性别</td><td>性别</td>
+<td class="low">low</td><td>L17</td></tr><tr><td>01_pii.txt</td><td>民族</td><td>汉族</td>
+<td class="low">low</td><td>L18</td></tr><tr><td>01_pii.txt</td><td>邮箱地址</td><td>user123@gmail.com</td>
+<td class="medium">medium</td><td>L19</td></tr><tr><td>01_pii.txt</td><td>邮箱地址</td><td>first.last@company.com.cn</td>
+<td class="medium">medium</td><td>L20</td></tr></table>
+<p style="color:#9ca3af;font-size:12px;margin-top:40px">SDD Scanner - generated</p>
+</body></html>

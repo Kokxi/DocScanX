@@ -58,18 +58,20 @@ def _deep_merge(base: SimpleNamespace, override: dict) -> None:
 
 def _validate_required(cfg: SimpleNamespace) -> None:
     """校验必填配置项，缺失时抛出 ValueError。"""
-    required_paths = [
-        ("uie", "model", "uie", "path"),
-        ("uie", "model", "uie", "version"),
-        ("ocr", "model", "ocr", "engine"),
+    required = [
+        ("uie_version", "model", "uie", "version"),
+        ("ocr_engine", "model", "ocr", "engine"),
+        ("model_dir", "path", "model_dir"),
+        ("ocr_onnx", "path", "ocr_onnx"),
+        ("uie_paddle", "path", "uie_paddle"),
     ]
     errors = []
-    for label, *path in required_paths:
+    for label, *path in required:
         current = cfg
         for part in path:
             current = getattr(current, part, None)
             if current is None:
-                errors.append(f"缺少必填配置项: {'->'.join([label, *path])}")
+                errors.append(f"缺少必填配置项: {label} ({'->'.join(path)})")
                 break
     if errors:
         raise ValueError("\n".join(errors))

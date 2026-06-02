@@ -1,4 +1,5 @@
 """配置相关 API 端点。"""
+import os
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Request
@@ -17,10 +18,13 @@ router = APIRouter()
 
 @router.get("/health")
 async def health():
-    """健康检查。"""
+    """健康检查 + 模型就绪状态。"""
+    cfg = config_module.config
+    model_dir = getattr(cfg.path, "model_dir", "./models") if cfg else "./models"
+    models_ready = bool(os.path.isdir(model_dir) and os.listdir(model_dir))
     return {
         "code": 0,
-        "data": {"status": "ok", "timestamp": datetime.now().isoformat()},
+        "data": {"status": "ok", "models_ready": models_ready, "timestamp": datetime.now().isoformat()},
         "message": "ok",
     }
 
