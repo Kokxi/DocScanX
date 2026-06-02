@@ -164,6 +164,10 @@ def parse_file(file_path: str) -> ParseResult:
     if ext in UNSUPPORTED_EXTS:
         return ParseResult(text="", error=f"老旧格式暂不支持: {ext}")
 
+    # 图片文件返回空文本，由 pipeline 后续 OCR 步骤处理
+    if ext in {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}:
+        return ParseResult(text="")
+
     parser = PARSERS.get(ext)
     if parser is None:
         return ParseResult(text="", error=f"不支持的文件格式: {ext}")

@@ -12,7 +12,7 @@ from typing import List, Optional
 
 logger = logging.getLogger("system")
 
-# ── 正则规则库 ──────────────────────────────────────────────
+# ── 正则规则库（内置默认）──────────────────────────────────────
 _PATTERNS: dict = {
     "id_card": re.compile(
         r"(?<!\d)[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?!\d)"
@@ -54,6 +54,56 @@ _PATTERNS: dict = {
         r"[一-鿿0-9\-,，\s]{4,50}"
     ),
 }
+
+# 标记哪些是标准格式（不建议用户修改）
+_STANDARD_TYPES: set = {"id_card", "phone", "email", "bank_card"}
+
+_custom_patterns_cache = None
+
+
+def _get_patterns() -> dict:
+    """获取当前生效的正则规则（合并 config 自定义 + 内置默认）。"""
+    global _custom_patterns_cache
+    try:
+        from app.core.config import config as app_config
+        if app_config and hasattr(app_config, "extraction"):
+            ext = app_config.extraction
+            custom = getattr(ext, "patterns", None)
+            if custom and isinstance(custom, dict):
+                # 检查自定义规则是否与上次缓存一致
+                cache_key = tuple(sorted(custom.items()))
+                if _custom_patterns_cache and _custom_patterns_cache[0] == cache_key:
+                    return _custom_patterns_cache[1]
+                # 合并：自定义优先，其余用默认
+                merged = dict(_PATTERNS)
+                flags = {"job_no": re.IGNORECASE}
+                for k, v in custom.items():
+                    if k in _PATTERNS and isinstance(v, str) and v.strip():
+                        try:
+                            merged[k] = re.compile(v, flags.get(k, 0))
+                        except re.error:
+                            logger.warning(f"自定义正则无效 [{k}]: {v}")
+                _custom_patterns_cache = (cache_key, merged)
+                return merged
+    except Exception:
+        pass
+    return _PATTERNS
+
+
+def get_pattern_strings() -> dict:
+    """返回当前生效的正则字符串（供前端展示）。"""
+    patterns = _get_patterns()
+    return {k: v.pattern for k, v in patterns.items()}
+
+
+def get_default_pattern_strings() -> dict:
+    """返回内置默认正则字符串（供前端恢复默认）。"""
+    return {k: v.pattern for k, v in _PATTERNS.items()}
+
+
+def is_standard_type(entity_type: str) -> bool:
+    """判断是否为标准格式类型。"""
+    return entity_type in _STANDARD_TYPES
 
 # 银行卡 BIN 码（前6位）校验表 — 主流银行
 _BANK_BINS: dict = {
@@ -221,15 +271,17 @@ def extract_entities(text: str, schema: Optional[List[str]] = None,
     if not text or not text.strip():
         return ExtractionResult(text=text)
 
+    patterns = _get_patterns()
+
     if schema is None:
-        schema = list(_PATTERNS.keys())
+        schema = list(patterns.keys())
 
     entities: List[Entity] = []
 
     for entity_type in schema:
-        if entity_type not in _PATTERNS:
+        if entity_type not in patterns:
             continue
-        pattern = _PATTERNS[entity_type]
+        pattern = patterns[entity_type]
         found = _extract_regex(text, entity_type, pattern)
 
         # 特殊校验：身份证

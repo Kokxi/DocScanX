@@ -64,3 +64,21 @@ async def get_default_config():
         return {"code": 0, "data": _namespace_to_dict(defaults), "message": "ok"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/extraction/patterns")
+async def get_extraction_patterns():
+    """获取当前生效的正则规则（合并自定义 + 默认）。"""
+    from app.engine.uie_engine import get_pattern_strings, get_default_pattern_strings, is_standard_type
+    current = get_pattern_strings()
+    defaults = get_default_pattern_strings()
+    items = []
+    for t in sorted(current.keys()):
+        items.append({
+            "type": t,
+            "pattern": current[t],
+            "default_pattern": defaults.get(t, ""),
+            "is_custom": current[t] != defaults.get(t, ""),
+            "is_standard": is_standard_type(t),
+        })
+    return {"code": 0, "data": {"patterns": items}}

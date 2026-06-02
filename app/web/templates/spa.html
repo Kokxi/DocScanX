@@ -38,14 +38,14 @@
 <!-- Dashboard -->
 <section v-if="currentTab==='dashboard'" class="page">
   <div class="page-header"><h2>工作台</h2><p class="page-desc">概览与快捷操作</p></div>
-  <div class="quick-scan-bar">
+  <div class="quick-scan-bar" @dragover.prevent @drop.prevent="quickScanDrop">
     <div class="qsb-icon" style="background:#4f6ef7">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </div>
     <div class="qsb-info"><strong>快捷扫描</strong><p>拖拽或选择文件快速识别敏感信息</p></div>
     <div class="quick-scan-zone">
-      <input type="file" id="quickScanInput" @change="quickScanFile" style="display:none" accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt,.jpg,.jpeg,.png,.bmp,.tiff,.txt,.csv,.json,.xml,.zip,.rar,.7z">
-      <button class="btn btn-primary" :disabled="quickScanLoading" onclick="document.getElementById('quickScanInput').click();return false" type="button">{{quickScanLoading?'扫描中...':'选择文件'}}</button>
+      <input type="file" ref="quickScanInput" @change="quickScanFile" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0" accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt,.jpg,.jpeg,.png,.bmp,.tiff,.txt,.csv,.json,.xml,.zip,.rar,.7z">
+      <button class="btn btn-primary" :disabled="quickScanLoading" @click="pickQuickScanFile" type="button">{{quickScanLoading?'扫描中...':'选择文件'}}</button>
       <span class="btn-text" style="cursor:default">选择本地文件快速扫描</span>
     </div>
   </div>
@@ -186,7 +186,7 @@
   <template v-if="taskView==='report'">
     <div class="page-header row">
       <div>
-        <button class="btn btn-ghost" style="padding:0;margin-bottom:4px" @click="backToTaskList">&larr; 返回任务列表</button>
+        <div class="breadcrumb"><a @click="backToTaskList">扫描任务</a><span class="bc-sep">›</span><span class="bc-current">扫描报告</span></div>
         <h2>扫描报告</h2>
         <p class="page-desc">任务扫描结果</p>
       </div>
@@ -339,7 +339,7 @@
             <label>目标路径</label>
             <div class="input-row">
               <input class="input" v-model="wizardData.path" placeholder="输入或选择文件夹路径，如 D:/HR/Docs/">
-              <button class="btn btn-outline" @click="browseFolder" type="button">
+              <button class="btn btn-outline" @click="browseFolder" :disabled="browseLoading" type="button">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 浏览
               </button>
@@ -385,8 +385,8 @@
           <!-- 单文件扫描：上传 -->
           <div v-if="wizardData.type==='file'" class="form-group">
             <label>选择文件</label>
-            <div class="file-upload-zone" @click="document.getElementById('wizFileInput').click()" @dragover.prevent @drop.prevent="$event.target.files && onFileSelected({target:$event.dataTransfer})">
-              <input type="file" id="wizFileInput" @change="onFileSelected" style="display:none" accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt,.jpg,.jpeg,.png,.bmp,.tiff,.txt,.csv,.json,.xml,.zip,.rar,.7z">
+            <div class="file-upload-zone" @click="pickWizFile" @dragover.prevent @drop.prevent="onFileSelected({target:$event.dataTransfer})">
+              <input type="file" ref="wizFileInput" @change="onFileSelected" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0" accept=".docx,.xlsx,.pptx,.pdf,.doc,.xls,.ppt,.jpg,.jpeg,.png,.bmp,.tiff,.txt,.csv,.json,.xml,.zip,.rar,.7z">
               <div v-if="!wizardData.uploadName" class="upload-placeholder">
                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 <span>点击选择文件或拖拽到此处</span>
@@ -525,11 +525,13 @@
     </div>
   </div>
 </section><section v-if="currentTab==='settings'" class="page">
+  <div class="page-header"><h2>系统配置</h2><p class="page-desc">扫描参数与引擎配置</p></div>
+  <nav class="sub-tabs">
+    <a :class="['sub-tab',{active:settingsView==='main'}]" @click="settingsView='main'">基本设置</a>
+    <a :class="['sub-tab',{active:settingsView==='risk'}]" @click="settingsView='risk'">风险评分规则</a>
+    <a :class="['sub-tab',{active:settingsView==='types'}]" @click="settingsView='types'">敏感类型配置</a>
+  </nav>
   <template v-if="settingsView==='main'">
-    <div class="page-header row">
-      <div><h2>系统配置</h2><p class="page-desc">扫描参数与引擎配置</p></div>
-      <button class="btn btn-outline" @click="settingsView='risk'">风险评分规则</button>
-    </div>
     <div class="settings-grid">
     <div class="card"><h3>扫描引擎</h3>
       <div class="setting-row"><label>并发线程数</label><input class="input-sm" type="number" v-model.number="settings.concurrency" min="1" max="16"></div>
@@ -556,12 +558,9 @@
   <div class="flex-row"><button class="btn btn-outline" @click="resetSettings">恢复默认</button><button class="btn btn-primary" @click="saveSettings">保存配置</button></div>
   </template>
   <template v-if="settingsView==='risk'">
-    <div class="page-header row">
-      <div>
-        <button class="btn btn-ghost" style="padding:0;margin-bottom:4px" @click="settingsView='main'">&larr; 返回系统配置</button>
-        <h2>风险评分规则</h2>
-        <p class="page-desc">敏感信息加权评分逻辑与等级映射</p>
-      </div>
+    <div class="page-header">
+      <h2>风险评分规则</h2>
+      <p class="page-desc">敏感信息加权评分逻辑与等级映射</p>
     </div>
     <div class="risk-config-grid">
       <div class="card">
@@ -605,6 +604,52 @@
         <span style="font-size:12px;color:var(--text-muted)">= {{riskWeights.filter(function(w){return riskExampleSelected[w.type]}).map(function(w){return w.label}).join(' + ') || '未选择'}}</span>
       </div>
     </div>
+  </template>
+  <template v-if="settingsView==='types'">
+    <div class="page-header">
+      <h2>敏感类型配置</h2>
+      <p class="page-desc">启用/禁用识别类型、自定义正则规则。标准格式（身份证/手机/邮箱/银行卡）不建议修改</p>
+    </div>
+    <div class="flex-row" style="margin-bottom:12px;justify-content:space-between">
+      <span style="font-size:12px;color:var(--text-muted)">{{entityTypes.filter(function(t){return t.enabled}).length}} / {{entityTypes.length}} 项已启用</span>
+      <div>
+        <button class="btn btn-ghost" @click="loadEntityPatterns" style="font-size:12px">↻ 刷新规则</button>
+        <button class="btn btn-ghost" @click="resetAllPatterns" style="font-size:12px;margin-left:4px">恢复默认规则</button>
+      </div>
+    </div>
+    <div v-for="t in entityTypes" :key="t.type" :class="['type-rule-card',{disabled:!t.enabled}]">
+      <div class="trc-header" @click="t.expanded=!t.expanded">
+        <span class="trc-dot" :style="{background:t.enabled?t.color:'#d1d5db'}"></span>
+        <span class="trc-label">{{t.label}}</span>
+        <code class="trc-key">{{t.type}}</code>
+        <span v-if="t.isStandard" class="badge badge-warn" style="font-size:10px;margin-left:4px">标准格式</span>
+        <span v-if="t.isCustom" class="badge badge-done" style="font-size:10px;margin-left:4px">已自定义</span>
+        <label class="trc-toggle" @click.stop><input type="checkbox" v-model="t.enabled"><span></span></label>
+        <span class="trc-arrow" :class="{open:t.expanded}">▸</span>
+      </div>
+      <div v-if="t.expanded" class="trc-body">
+        <div class="trc-row">
+          <label class="trc-field-label">正则表达式</label>
+          <div class="trc-input-row">
+            <input class="input input-mono" v-model="t.pattern" :placeholder="t.defaultPattern">
+            <button class="btn btn-ghost" @click="t.pattern=t.defaultPattern" :disabled="t.pattern===t.defaultPattern" style="font-size:11px">重置</button>
+          </div>
+        </div>
+        <div class="trc-row">
+          <label class="trc-field-label">测试</label>
+          <div class="trc-input-row">
+            <input class="input" v-model="t.testText" :placeholder="'输入测试文本，如：'+t.testPlaceholder">
+            <button class="btn btn-outline" @click="testEntityPattern(t)" :disabled="!t.testText" style="font-size:12px">测试匹配</button>
+          </div>
+          <div v-if="t.testResult!==null" class="trc-test-result" :class="{pass:t.testResult.length>0, fail:t.testResult.length===0}">
+            <span v-if="t.testResult.length>0">匹配 {{t.testResult.length}} 项：<code v-for="(m,i) in t.testResult" :key="i">{{m}}</code></span>
+            <span v-else>未匹配到任何内容</span>
+          </div>
+          <div v-if="t.testError" class="trc-test-result fail"><span>{{t.testError}}</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="flex-row" style="margin-top:16px"><button class="btn btn-primary" @click="saveEntityTypes">保存配置</button></div>
   </template>
 </section>
 <section v-if="currentTab==='logs'" class="page">

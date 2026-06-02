@@ -99,3 +99,30 @@ path:
   ocr_onnx: ./models/ocr
   uie_paddle: ./models/uie/paddle
   uie_torch: ./models/uie/pytorch
+extraction:
+  enabled_types:
+  - id_card
+  - phone
+  - email
+  - bank_card
+  - plate_no
+  - passport
+  - wechat
+  - birthday
+  - job_no
+  - gender
+  - name
+  - address
+  patterns:
+    id_card: (?<!\d)[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?!\d)
+    phone: (?<!\d)1[3-9]\d{9}(?!\d)
+    email: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    bank_card: (?<!\d)(?!\d{6}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx])\d{16,19}(?!\d)
+    plate_no: '[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤川青藏琼宁][A-HJ-NP-Z][A-HJ-NP-Z0-9]{4,5}[A-HJ-NP-Z0-9挂学警港澳]'
+    passport: '[EGK]\d{8}'
+    wechat: 微信[号:：]?\s*([a-zA-Z][a-zA-Z0-9_-]{5,19})
+    birthday: (?:19|20)\d{2}[-/年](?:0[1-9]|1[0-2])[-/月](?:0[1-9]|[12]\d|3[01])[日号]?
+    job_no: (?:工号|员工号|Job\s*No\.?)[:：\s]*([A-Z0-9]{4,20})
+    gender: '[男女](?:士|性)?'
+    name: (?:姓名|名字|持卡人|开户人|联系人|负责人|法人|申请人)[:：\s]*([一-鿿]{2,4})(?:先生|女士|同志)?
+    address: (?:地址|住址|所在地|位于)[:：\s]*([一-鿿]{2,}(?:省|自治区|市|区|县|镇|乡|村|路|街|巷|号|楼|层|室|单元|栋|幢))[一-鿿0-9\-,，\s]{4,50}

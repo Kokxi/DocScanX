@@ -36,6 +36,9 @@ async def start_scan(request: Request):
     extract_archive = body.get("extract_archive", True)
     cfg_default_mask = getattr(getattr(config_module.config, "inference", None), "mask_enabled", True) if config_module.config else True
     mask_enabled = body.get("mask_enabled", cfg_default_mask)
+    # 从全局配置读取敏感类型提取列表
+    _cfg_extract = getattr(config_module.config, "extraction", None)
+    extract_schema = getattr(_cfg_extract, "enabled_types", None) if _cfg_extract else None
     ext_groups = body.get("ext_groups")
     if ext_groups and isinstance(ext_groups, dict) and not any(ext_groups.values()):
         ext_groups = None
@@ -51,7 +54,7 @@ async def start_scan(request: Request):
             # 单文件扫描
             ext = os.path.splitext(dir_path)[1].lower()
             size_mb = os.path.getsize(dir_path) / (1024 * 1024)
-            file_result = process_file(dir_path, ext, size_mb, mask_enabled=mask_enabled)
+            file_result = process_file(dir_path, ext, size_mb, mask_enabled=mask_enabled, extract_schema=extract_schema)
             from app.engine.pipeline import PipelineResult
             result = PipelineResult()
             if not file_result.error:
@@ -64,6 +67,7 @@ async def start_scan(request: Request):
                 extract_archive=extract_archive,
                 ext_groups=ext_groups,
                 mask_enabled=mask_enabled,
+                extract_schema=extract_schema,
             )
         # 保存报告
         report_id = save_report(result, _output_dir(), task_name=task_name)

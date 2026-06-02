@@ -55,6 +55,21 @@ createApp({
 
     const quickScanResult = ref(null);
     const quickScanLoading = ref(false);
+    const quickScanInput = ref(null);
+    const wizFileInput = ref(null);
+
+    function pickQuickScanFile() {
+      if (quickScanInput.value) quickScanInput.value.click();
+    }
+    function pickWizFile() {
+      if (wizFileInput.value) wizFileInput.value.click();
+    }
+
+    function quickScanDrop(e) {
+      var file = e.dataTransfer.files[0];
+      if (!file) return;
+      quickScanFile({target: {files: [file]}});
+    }
 
     async function quickScanFile(e) {
       var file = e.target.files[0];
@@ -220,7 +235,10 @@ createApp({
     }
 
     // ---- Folder browser ----
+    const browseLoading = ref(false);
     async function browseFolder() {
+      if (browseLoading.value) return;
+      browseLoading.value = true;
       try {
         var res = await api('/scan/browse-folder', {method: 'POST'});
         if (res.code === 0 && res.data.path) {
@@ -230,6 +248,8 @@ createApp({
         }
       } catch (e) {
         showToast('文件夹选择失败，请手动输入路径', 'info');
+      } finally {
+        browseLoading.value = false;
       }
     }
 
@@ -310,9 +330,9 @@ createApp({
       });
     });
 
-    var _stageLabels = {解析:'解析', PDF判定:'PDF判定', OCR:'OCR', 抽取:'抽取', 校验:'校验', 脱敏:'脱敏', IPE:'IPE'};
-    var _stageColors = {解析:'#4f6ef7', PDF判定:'#f59e0b', OCR:'#22c55e', 抽取:'#8b5cf6', 校验:'#6366f1', 脱敏:'#94a3b8', IPE:'#ec4899'};
-    var _stageOrder = ['解析','PDF判定','OCR','抽取','校验','脱敏','IPE'];
+    var _stageLabels = {解析:'解析', PDF判定:'PDF判定', OCR:'OCR', 抽取:'抽取', 校验:'校验', 脱敏:'脱敏', IPE:'IPE', 脱敏应用:'脱敏应用'};
+    var _stageColors = {解析:'#4f6ef7', PDF判定:'#f59e0b', OCR:'#22c55e', 抽取:'#8b5cf6', 校验:'#6366f1', 脱敏:'#94a3b8', IPE:'#ec4899', 脱敏应用:'#14b8a6'};
+    var _stageOrder = ['解析','PDF判定','OCR','抽取','校验','脱敏','IPE','脱敏应用'];
 
     const processingDuration = computed(function() {
       if (!reportDetail.value || !reportDetail.value.files) return {stages:[], totalAvg:'-', totalMax:'-', fileCount:0};
@@ -654,6 +674,119 @@ createApp({
     const settingsView = ref('main');
     const settingsLoaded = ref(false);
 
+    // ---- Entity types config ----
+    const _allEntityTypes = [
+      {type:'id_card', label:'身份证', color:'#ef4444', isStandard:true, testPlaceholder:'440106199001011234'},
+      {type:'phone', label:'手机号', color:'#f97316', isStandard:true, testPlaceholder:'13800138000'},
+      {type:'email', label:'邮箱', color:'#f59e0b', isStandard:true, testPlaceholder:'test@example.com'},
+      {type:'bank_card', label:'银行卡', color:'#dc2626', isStandard:true, testPlaceholder:'6222021234567890123'},
+      {type:'plate_no', label:'车牌号', color:'#eab308', isStandard:false, testPlaceholder:'京A12345'},
+      {type:'passport', label:'护照', color:'#8b5cf6', isStandard:false, testPlaceholder:'E12345678'},
+      {type:'wechat', label:'微信', color:'#22c55e', isStandard:false, testPlaceholder:'微信号 wxid_abc123'},
+      {type:'birthday', label:'生日', color:'#14b8a6', isStandard:false, testPlaceholder:'1990-01-01'},
+      {type:'job_no', label:'工号', color:'#6366f1', isStandard:false, testPlaceholder:'工号: KW0231'},
+      {type:'gender', label:'性别', color:'#ec4899', isStandard:false, testPlaceholder:'男'},
+      {type:'name', label:'姓名', color:'#4f6ef7', isStandard:false, testPlaceholder:'姓名: 张三'},
+      {type:'address', label:'地址', color:'#84cc16', isStandard:false, testPlaceholder:'地址: 北京市朝阳区某某路100号'}
+    ];
+    var entityTypes = ref([]);
+
+    function _initEntityTypes(enabledList, patterns) {
+      entityTypes.value = _allEntityTypes.map(function(t) {
+        var isCustom = patterns && patterns[t.type] && patterns[t.type] !== t._defaultPattern;
+        return {
+          type: t.type, label: t.label, color: t.color,
+          isStandard: t.isStandard, testPlaceholder: t.testPlaceholder,
+          enabled: enabledList ? enabledList.indexOf(t.type) >= 0 : true,
+          pattern: (patterns && patterns[t.type]) || '',
+          defaultPattern: t._defaultPattern || '',
+          isCustom: !!isCustom,
+          expanded: false,
+          testText: '',
+          testResult: null,
+          testError: null
+        };
+      });
+    }
+
+    async function loadEntityPatterns() {
+      try {
+        var res = await api('/extraction/patterns');
+        if (res.code === 0) {
+          var items = res.data.patterns || [];
+          var patternMap = {};
+          items.forEach(function(p) { patternMap[p.type] = p.pattern; });
+          entityTypes.value.forEach(function(t) {
+            if (patternMap[t.type]) t.pattern = patternMap[t.type];
+            t.defaultPattern = items.find(function(p) { return p.type === t.type; })?.default_pattern || '';
+            t.isCustom = t.pattern && t.pattern !== t.defaultPattern;
+            t.expanded = false; t.testResult = null; t.testError = null;
+          });
+        }
+      } catch (e) {
+        showToast('加载正则规则失败', 'error');
+      }
+    }
+
+    async function resetAllPatterns() {
+      entityTypes.value.forEach(function(t) {
+        t.pattern = '';
+        t.isCustom = false;
+        t.testResult = null;
+        t.testError = null;
+      });
+      showToast('已恢复默认规则，请点击保存生效', 'success');
+    }
+
+    function testEntityPattern(t) {
+      t.testResult = null;
+      t.testError = null;
+      var regexStr = t.pattern || t.defaultPattern;
+      if (!regexStr) { t.testError = '无可用正则'; return; }
+      try {
+        var re = new RegExp(regexStr, t.type === 'job_no' ? 'i' : '');
+        var matches = [];
+        var m;
+        // Use while loop with exec for global matching
+        var globalRe = new RegExp(regexStr, 'g' + (t.type === 'job_no' ? 'i' : ''));
+        while ((m = globalRe.exec(t.testText)) !== null) {
+          matches.push(m[1] || m[0]);
+        }
+        t.testResult = matches.slice(0, 10);
+      } catch (e) {
+        t.testError = '正则语法错误: ' + e.message;
+      }
+    }
+
+    async function saveEntityTypes() {
+      var enabledList = entityTypes.value.filter(function(t) { return t.enabled; }).map(function(t) { return t.type; });
+      var customPatterns = {};
+      entityTypes.value.forEach(function(t) {
+        if (t.pattern && t.pattern.trim() && t.pattern !== t.defaultPattern) {
+          customPatterns[t.type] = t.pattern;
+        }
+      });
+      try {
+        var body = {extraction: {enabled_types: enabledList}};
+        if (Object.keys(customPatterns).length > 0) {
+          body.extraction.patterns = customPatterns;
+        }
+        var res = await api('/config', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(body)
+        });
+        if (res.code === 0) {
+          showToast('敏感类型配置已保存', 'success');
+          loadEntityPatterns();
+        } else {
+          showToast('保存失败: ' + res.message, 'error');
+        }
+      } catch (e) {
+        showToast('保存失败: ' + e.message, 'error');
+      }
+    }
+
     // ---- Risk scoring config ----
     const riskWeights = [
       {type:'id_card', label:'身份证', weight:0.30, color:'#ef4444'},
@@ -962,6 +1095,29 @@ createApp({
       }
     }
 
+    async function _loadSettingsWithPatterns() {
+      try {
+        var cfgRes = await api('/config');
+        var patRes = await api('/extraction/patterns');
+        var patterns = {};
+        if (patRes.code === 0) {
+          (patRes.data.patterns || []).forEach(function(p) {
+            patterns[p.type] = p.pattern;
+          });
+        }
+        if (cfgRes.code === 0 && cfgRes.data && Object.keys(cfgRes.data).length > 0) {
+          settings.value = configToSettings(cfgRes.data);
+          _initEntityTypes(cfgRes.data.extraction?.enabled_types, patterns);
+        } else {
+          _initEntityTypes(null, patterns);
+        }
+        settingsLoaded.value = true;
+      } catch (e) {
+        console.error('加载配置失败:', e);
+        settingsLoaded.value = true;
+      }
+    }
+
     async function checkHealth() {
       try {
         const res = await api('/health');
@@ -1005,7 +1161,7 @@ createApp({
         checkHealth(),
         loadAllReports(),
         loadPersons(),
-        loadSettings()
+        _loadSettingsWithPatterns()
       ]);
       await loadAuditLogs();
     });
@@ -1015,10 +1171,10 @@ createApp({
       currentTab, tabs, moduleName, modelReady,
       toasts, showToast, removeToast,
       folderSvg, fileSvg,
-      stats, quickScanResult, quickScanLoading, quickScanFile, recentTasks,
+      stats, quickScanResult, quickScanLoading, quickScanInput, quickScanFile, quickScanDrop, pickQuickScanFile, recentTasks,
       dashboardRiskDist, entityTop5,
       showWizard, wizardStep, wizardData, remoteTesting, taskView, openWizard, wizardNext, wizardPrev,
-      onFileSelected, browseFolder, testRemoteConnection, backToTaskList, taskFilter, allTasks, filteredTasks, taskStats,
+      onFileSelected, pickWizFile, wizFileInput, browseFolder, browseLoading, testRemoteConnection, backToTaskList, taskFilter, allTasks, filteredTasks, taskStats,
       selectedTaskFile, taskFileDetails, taskSensitiveTotal, viewFileDetail, viewReport,
       anomalousFiles, downloadAnomalousList, exportReport,
       entityDistribution, fileTypeDistribution, processingDuration,
@@ -1028,6 +1184,7 @@ createApp({
       subjectRiskSummary, highRiskCount, highRiskRatio, avgFilesPerPerson,
       settings, resetSettings, saveSettings, settingsView,
       riskWeights, riskExampleSelected, riskExampleScore, riskExampleLevel,
+      entityTypes, saveEntityTypes, loadEntityPatterns, resetAllPatterns, testEntityPattern,
       logFilter, logView, auditLogs, filteredAuditLogs, fileTraces, traceReportId, loadFileTraces
     };
   }

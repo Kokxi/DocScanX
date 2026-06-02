@@ -171,6 +171,24 @@ def process_file(file_path: str, ext: str = "", size_mb: float = 0.0,
             add_risk_to_person(p)
         _trace(result, "IPE", "成功", fields_count=len(result.ipe_result.persons), t0=t0)
 
+        # 8. 应用脱敏到实体和人员数据
+        if mask_enabled and result.masked_report:
+            t0 = time.time()
+            mappings = result.masked_report.get("mappings", [])
+            value_map = {m["original"]: m["masked"] for m in mappings}
+            _sensitive_attrs = ["name", "id_card", "phone", "email", "bank_card",
+                               "address", "wechat", "birthday", "job_no", "plate_no",
+                               "passport", "gender"]
+            for e in valid_entities:
+                if e.value in value_map:
+                    e.value = value_map[e.value]
+            for p in result.ipe_result.persons:
+                for attr in _sensitive_attrs:
+                    val = getattr(p, attr, "")
+                    if val and val in value_map:
+                        setattr(p, attr, value_map[val])
+            _trace(result, "脱敏应用", "成功", t0=t0)
+
     except Exception as e:
         logger.error(f"处理文件失败 [{file_path}]: {e}")
         result.error = str(e)
