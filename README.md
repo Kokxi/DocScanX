@@ -104,7 +104,7 @@ main.py            — FastAPI 应用入口（Web 服务）
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-org/docscanx.git
+git clone https://github.com/Kokxi/DocScanX.git
 cd docscanx
 
 # 2. 创建虚拟环境
@@ -125,7 +125,9 @@ pip install torch transformers
 
 ### 模型准备
 
-模型已预下载在 `models/` 目录下，包含：
+> ⚠️ 模型文件默认不纳入 Git 管理，克隆后 `models/` 目录为空，需要手动下载。
+
+模型清单如下（参见 `models/README.md` 获取下载脚本和链接）：
 
 | 模型 | 路径 | 大小 | 说明 |
 |------|------|------|------|
@@ -137,7 +139,14 @@ pip install torch transformers
 | UIE-base | `models/uie/paddle/uie-base/` | 450 MB | 最高精度 |
 | UIE PyTorch | `models/uie/pytorch/` | 391 MB | 回退方案 |
 
-模型文件缺失或损坏时，参见 `models/README.md` 重新下载。
+下载完成后，使用以下命令验证模型就绪：
+
+```bash
+# 检查 OCR 模型
+ls models/ocr/*.onnx
+# 检查 UIE 模型（以 uie-tiny 为例）
+ls models/uie/paddle/uie-tiny/
+```
 
 ### 启动
 
